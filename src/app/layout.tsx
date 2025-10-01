@@ -37,7 +37,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     useEffect(() => {
-        document.title = "Sistema de Fluxo de Caixa";
+        document.title = "FluxoCaixa";
     }, []);
 
     return (
