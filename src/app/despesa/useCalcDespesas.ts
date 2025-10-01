@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import dayjs from "@/lib/config/dayjs.config";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DespesaDados } from "@/lib/types/despesaModal.types";
 import type { ApiListResponse, ListMeta } from "@/lib/types/despesaPage.types";

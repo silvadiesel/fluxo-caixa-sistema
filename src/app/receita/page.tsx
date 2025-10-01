@@ -1,8 +1,7 @@
 "use client";
 
 import React, { JSX, useCallback, useEffect, useMemo, useState } from "react";
-import dayjs from "dayjs";
-import "dayjs/locale/pt-br";
+import dayjs from "@/lib/config/dayjs.config";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -27,8 +26,6 @@ import { useCalcReceitas } from "./useCalcReceitas";
 import { useFilterDate } from "../../lib/hooks/useFilterDate";
 import { toast } from "sonner";
 import { getDefaultMonthFilter } from "@/lib/utils/dateUtils";
-
-dayjs.locale("pt-br");
 
 // --- Utils ------------------------------------------------------------------
 const currencyBR = new Intl.NumberFormat("pt-BR", {
