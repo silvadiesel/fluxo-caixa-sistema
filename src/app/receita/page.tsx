@@ -4,7 +4,6 @@ import React, { JSX, useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 
-import { Sidebar } from "@/components/sidebar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -185,297 +184,274 @@ export default function ReceitaPage(): JSX.Element {
 
     return (
         <ProtectedRoute>
-            <div className="flex h-screen bg-background">
-                <Sidebar />
+            <header className="bg-card border-b border-border p-6">
+                <div className="flex md:flex-row flex-col gap-2 md:gap-0 md:items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">Receitas</h1>
+                        <p className="text-muted-foreground">Gerencie todas as suas receitas</p>
+                    </div>
+                    {user?.id && <ModalReceita usuarioId={user.id} onSave={handleSaved} />}
+                </div>
+            </header>
 
-                <div className="flex-1 overflow-auto">
-                    <header className="bg-card border-b border-border p-6">
-                        <div className="flex md:flex-row flex-col gap-2 md:gap-0 md:items-center justify-between">
-                            <div>
-                                <h1 className="text-2xl font-bold text-foreground">Receitas</h1>
-                                <p className="text-muted-foreground">
-                                    Gerencie todas as suas receitas
-                                </p>
+            <main className="p-6 space-y-6">
+                {/* Cards resumo */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="bg-green-50 border-green-200">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-green-800">
+                                Categoria com Maior Receita
+                            </CardTitle>
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-green-900">
+                                {currencyBR.format(categoriaComMaiorReceita.valor)}
                             </div>
-                            {user?.id && <ModalReceita usuarioId={user.id} onSave={handleSaved} />}
+                            <p className="text-xs text-green-600 mt-1">
+                                {categoriaComMaiorReceita.categoria}
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-blue-50 border-blue-200">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-blue-800">
+                                Receitas do Mês
+                            </CardTitle>
+                            <TrendingUp className="h-4 w-4 text-blue-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-blue-900">
+                                {currencyBR.format(receitasMes)}
+                            </div>
+                            <p className="text-xs text-blue-600 mt-1">
+                                {percentualMesAnterior !== 0 ? (
+                                    <>
+                                        {percentualMesAnterior > 0 ? "+" : ""}
+                                        {percentualMesAnterior.toFixed(1)}% vs mês anterior
+                                    </>
+                                ) : (
+                                    "Referente ao mês atual"
+                                )}
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-purple-50 border-purple-200">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-purple-800">
+                                Média por Receita
+                            </CardTitle>
+                            <BarChart3 className="h-4 w-4 text-purple-600" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-purple-900">
+                                {currencyBR.format(mediaReceitas)}
+                            </div>
+                            <p className="text-xs text-purple-600 mt-1">Valor médio</p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Filtros */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Filtros</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="flex-1">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Buscar por Receitas..."
+                                        value={busca}
+                                        onChange={(e) => {
+                                            setPage(1);
+                                            setBusca(e.target.value);
+                                        }}
+                                        className="pl-10"
+                                    />
+                                </div>
+                            </div>
+
+                            <Select
+                                value={filtroCategoria}
+                                onValueChange={(value) => {
+                                    setPage(1);
+                                    setFiltroCategoria(value);
+                                }}
+                            >
+                                <SelectTrigger className="w-full md:w-48">
+                                    <SelectValue placeholder="Categoria" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {CATEGORIES.map((categories) => (
+                                        <SelectItem key={categories.value} value={categories.value}>
+                                            {categories.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <Select
+                                value={filtroStatus}
+                                onValueChange={(value: StatusUI) => {
+                                    setPage(1);
+                                    setFiltroStatus(value);
+                                }}
+                            >
+                                <SelectTrigger className="w-full md:w-48">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {(
+                                        ["todos", "Recebido", "Pendente", "Cancelado"] as StatusUI[]
+                                    ).map((status) => (
+                                        <SelectItem key={status} value={status}>
+                                            {status}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <Select
+                                value={String(pageSize)}
+                                onValueChange={(value) => {
+                                    setPage(1);
+                                    setPageSize(Number(value));
+                                }}
+                            >
+                                <SelectTrigger className="w-full md:w-40">
+                                    <SelectValue placeholder="Itens por página" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[5, 10, 20, 50].map((number) => (
+                                        <SelectItem key={number} value={String(number)}>
+                                            {number}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <MonthSelectComponent
+                                filtroMes={filtroMes}
+                                setFiltroMes={setFiltroMes}
+                                setPage={setPage}
+                            />
                         </div>
-                    </header>
+                    </CardContent>
+                </Card>
 
-                    <main className="p-6 space-y-6">
-                        {/* Cards resumo */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <Card className="bg-green-50 border-green-200">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium text-green-800">
-                                        Categoria com Maior Receita
-                                    </CardTitle>
-                                    <DollarSign className="h-4 w-4 text-green-600" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold text-green-900">
-                                        {currencyBR.format(categoriaComMaiorReceita.valor)}
+                {/* Lista de Receitas */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Lista de Receitas</CardTitle>
+                        <CardDescription>
+                            {loading
+                                ? "Carregando..."
+                                : `${meta.total} receita(s) encontrada(s)${
+                                      debouncedBusca ? ` para "${debouncedBusca}"` : ""
+                                  }`}
+                            {errorMsg ? (
+                                <span className="ml-2 text-destructive">{errorMsg}</span>
+                            ) : null}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {!loading && itens.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    Nenhum registro encontrado.
+                                </p>
+                            ) : null}
+
+                            {itens.map((receita) => (
+                                <div
+                                    key={receita.id}
+                                    className={cn(
+                                        "flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                                    )}
+                                >
+                                    <div className="flex md:flex-row flex-col items-center space-x-4">
+                                        <div className="p-2 md:flex hidden rounded-full bg-green-100 text-green-600">
+                                            <TrendingUp className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-foreground">
+                                                {receita.descricao}
+                                            </p>
+                                            <div className="flex md:flex-row flex-col items-start md:items-center space-x-2 mt-1">
+                                                <Badge variant="outline" className="text-xs">
+                                                    {receita.categoria}
+                                                </Badge>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {dayjs(receita.data).format("DD/MM/YYYY")}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-green-600 mt-1">
-                                        {categoriaComMaiorReceita.categoria}
-                                    </p>
-                                </CardContent>
-                            </Card>
 
-                            <Card className="bg-blue-50 border-blue-200">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium text-blue-800">
-                                        Receitas do Mês
-                                    </CardTitle>
-                                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold text-blue-900">
-                                        {currencyBR.format(receitasMes)}
-                                    </div>
-                                    <p className="text-xs text-blue-600 mt-1">
-                                        {percentualMesAnterior !== 0 ? (
-                                            <>
-                                                {percentualMesAnterior > 0 ? "+" : ""}
-                                                {percentualMesAnterior.toFixed(1)}% vs mês anterior
-                                            </>
-                                        ) : (
-                                            "Referente ao mês atual"
-                                        )}
-                                    </p>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="bg-purple-50 border-purple-200">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium text-purple-800">
-                                        Média por Receita
-                                    </CardTitle>
-                                    <BarChart3 className="h-4 w-4 text-purple-600" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold text-purple-900">
-                                        {currencyBR.format(mediaReceitas)}
-                                    </div>
-                                    <p className="text-xs text-purple-600 mt-1">Valor médio</p>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Filtros */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Filtros</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-col md:flex-row gap-4">
-                                    <div className="flex-1">
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                            <Input
-                                                placeholder="Buscar por Receitas..."
-                                                value={busca}
-                                                onChange={(e) => {
-                                                    setPage(1);
-                                                    setBusca(e.target.value);
-                                                }}
-                                                className="pl-10"
+                                    <div className="flex md:flex-row flex-col items-center space-x-4">
+                                        <div className="text-right ">
+                                            <p className="font-semibold text-green-600">
+                                                {currencyBR.format(receita.valor)}
+                                            </p>
+                                            <Badge
+                                                variant={
+                                                    receita.status === "Recebido"
+                                                        ? "default"
+                                                        : "secondary"
+                                                }
+                                                className="text-xs"
+                                            >
+                                                {receita.status}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            {user?.id && (
+                                                <ModalReceita
+                                                    receita={receita}
+                                                    usuarioId={user.id}
+                                                    onSave={handleSaved}
+                                                />
+                                            )}
+                                            <ModalDelete
+                                                itemName={receita.descricao}
+                                                itemType="receita"
+                                                onConfirm={() => handleDelete(receita.id)}
                                             />
                                         </div>
                                     </div>
-
-                                    <Select
-                                        value={filtroCategoria}
-                                        onValueChange={(value) => {
-                                            setPage(1);
-                                            setFiltroCategoria(value);
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full md:w-48">
-                                            <SelectValue placeholder="Categoria" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {CATEGORIES.map((categories) => (
-                                                <SelectItem
-                                                    key={categories.value}
-                                                    value={categories.value}
-                                                >
-                                                    {categories.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-
-                                    <Select
-                                        value={filtroStatus}
-                                        onValueChange={(value: StatusUI) => {
-                                            setPage(1);
-                                            setFiltroStatus(value);
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full md:w-48">
-                                            <SelectValue placeholder="Status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {(
-                                                [
-                                                    "todos",
-                                                    "Recebido",
-                                                    "Pendente",
-                                                    "Cancelado",
-                                                ] as StatusUI[]
-                                            ).map((status) => (
-                                                <SelectItem key={status} value={status}>
-                                                    {status}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-
-                                    <Select
-                                        value={String(pageSize)}
-                                        onValueChange={(value) => {
-                                            setPage(1);
-                                            setPageSize(Number(value));
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full md:w-40">
-                                            <SelectValue placeholder="Itens por página" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {[5, 10, 20, 50].map((number) => (
-                                                <SelectItem key={number} value={String(number)}>
-                                                    {number}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-
-                                    <MonthSelectComponent
-                                        filtroMes={filtroMes}
-                                        setFiltroMes={setFiltroMes}
-                                        setPage={setPage}
-                                    />
                                 </div>
-                            </CardContent>
-                        </Card>
+                            ))}
+                        </div>
 
-                        {/* Lista de Receitas */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Lista de Receitas</CardTitle>
-                                <CardDescription>
-                                    {loading
-                                        ? "Carregando..."
-                                        : `${meta.total} receita(s) encontrada(s)${
-                                              debouncedBusca ? ` para "${debouncedBusca}"` : ""
-                                          }`}
-                                    {errorMsg ? (
-                                        <span className="ml-2 text-destructive">{errorMsg}</span>
-                                    ) : null}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {!loading && itens.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">
-                                            Nenhum registro encontrado.
-                                        </p>
-                                    ) : null}
-
-                                    {itens.map((receita) => (
-                                        <div
-                                            key={receita.id}
-                                            className={cn(
-                                                "flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                                            )}
-                                        >
-                                            <div className="flex md:flex-row flex-col items-center space-x-4">
-                                                <div className="p-2 md:flex hidden rounded-full bg-green-100 text-green-600">
-                                                    <TrendingUp className="h-4 w-4" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium text-foreground">
-                                                        {receita.descricao}
-                                                    </p>
-                                                    <div className="flex md:flex-row flex-col items-start md:items-center space-x-2 mt-1">
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="text-xs"
-                                                        >
-                                                            {receita.categoria}
-                                                        </Badge>
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {dayjs(receita.data).format(
-                                                                "DD/MM/YYYY"
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex md:flex-row flex-col items-center space-x-4">
-                                                <div className="text-right ">
-                                                    <p className="font-semibold text-green-600">
-                                                        {currencyBR.format(receita.valor)}
-                                                    </p>
-                                                    <Badge
-                                                        variant={
-                                                            receita.status === "Recebido"
-                                                                ? "default"
-                                                                : "secondary"
-                                                        }
-                                                        className="text-xs"
-                                                    >
-                                                        {receita.status}
-                                                    </Badge>
-                                                </div>
-                                                <div className="flex space-x-2">
-                                                    {user?.id && (
-                                                        <ModalReceita
-                                                            receita={receita}
-                                                            usuarioId={user.id}
-                                                            onSave={handleSaved}
-                                                        />
-                                                    )}
-                                                    <ModalDelete
-                                                        itemName={receita.descricao}
-                                                        itemType="receita"
-                                                        onConfirm={() => handleDelete(receita.id)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="mt-6 flex md:flex-row flex-col items-center justify-between">
-                                    <p className="text-sm text-muted-foreground">
-                                        Página {meta.page} de {totalPages}
-                                    </p>
-                                    <div className="space-x-2">
-                                        <Button
-                                            variant="outline"
-                                            disabled={loading || page <= 1}
-                                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                        >
-                                            Anterior
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            disabled={loading || page >= totalPages}
-                                            onClick={() =>
-                                                setPage((p) => Math.min(totalPages, p + 1))
-                                            }
-                                        >
-                                            Próxima
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </main>
-                </div>
-            </div>
+                        <div className="mt-6 flex md:flex-row flex-col items-center justify-between">
+                            <p className="text-sm text-muted-foreground">
+                                Página {meta.page} de {totalPages}
+                            </p>
+                            <div className="space-x-2">
+                                <Button
+                                    variant="outline"
+                                    disabled={loading || page <= 1}
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                >
+                                    Anterior
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    disabled={loading || page >= totalPages}
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                >
+                                    Próxima
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </main>
         </ProtectedRoute>
     );
 }
