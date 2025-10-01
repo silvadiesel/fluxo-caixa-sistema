@@ -23,8 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus, Edit } from "lucide-react";
-import dayjs from "dayjs";
-import "dayjs/locale/pt-br";
+import dayjs from "@/lib/config/dayjs.config";
 import { cn } from "@/lib/utils";
 
 import { ApiResponse, isApiError, ReceitaDadosUI, UiStatus } from "@/lib/types/receitaModal.types";
@@ -37,7 +36,6 @@ interface ModalReceitaProps {
 }
 
 export function ModalReceita({ receita, usuarioId, onSave }: ModalReceitaProps) {
-    dayjs.locale("pt-br");
     const isEditing = !!receita;
 
     const [open, setOpen] = useState(false);

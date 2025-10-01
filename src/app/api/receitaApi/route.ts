@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
         .insert(receita)
         .values({
             ...data,
+            valor: Number(data.valor),
             observacoes: data.observacoes ?? null,
         })
         .returning();

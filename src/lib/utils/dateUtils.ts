@@ -1,5 +1,21 @@
-import dayjs from "dayjs";
+import dayjs from "@/lib/config/dayjs.config";
 import { Periodo, PeriodoPreset } from "../types/relatorio.types";
+
+/**
+ * Formata uma data no formato YYYY-MM-DD para exibição em pt-BR (DD/MM/YYYY)
+ * Evita problemas de timezone ao interpretar a data como local, não UTC
+ */
+export function formatDateBR(dateString: string): string {
+    // Se a string já contém horário, usa dayjs diretamente
+    if (dateString.includes("T") || dateString.includes(" ")) {
+        return dayjs(dateString).format("DD/MM/YYYY");
+    }
+
+    // Para datas no formato YYYY-MM-DD, cria a data localmente sem conversão UTC
+    const [year, month, day] = dateString.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString("pt-BR");
+}
 
 export function buildPeriodo(
     tipo: PeriodoPreset,

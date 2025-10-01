@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import dayjs from "@/lib/config/dayjs.config";
 import type {
     ReceitaUpdatePayload,
     ApiStatus,

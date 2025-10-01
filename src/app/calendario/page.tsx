@@ -12,9 +12,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, Clock, TrendingUp } from "lucide-react";
+import { AlertTriangle, Clock, TrendingUp, Wallet } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useFinancialData } from "@/lib/hooks/useFinancialData";
+import { formatDateBR } from "@/lib/utils/dateUtils";
 
 export default function CalendarioPage() {
     const { user } = useAuth();
@@ -35,7 +36,7 @@ export default function CalendarioPage() {
 
                 return {
                     ...item,
-                    valor: parseFloat(item.valor),
+                    valor: item.valor,
                     dataVencimento: item.data,
                     diasRestantes,
                 };
@@ -72,8 +73,15 @@ export default function CalendarioPage() {
     const totalProximas = dadosProcessados
         .filter((d) => d.diasRestantes >= 0 && d.diasRestantes <= 7)
         .reduce((acc, d) => acc + d.valor, 0);
-    const totalReceitas = dadosProcessados
-        .filter((d) => d.tipo === "receita")
+    const totalDespesasMes = dadosProcessados
+        .filter((d) => {
+            const dataItem = new Date(d.data);
+            const hoje = new Date();
+            return (
+                dataItem.getMonth() === hoje.getMonth() &&
+                dataItem.getFullYear() === hoje.getFullYear()
+            );
+        })
         .reduce((acc, d) => acc + d.valor, 0);
 
     return (
@@ -129,21 +137,21 @@ export default function CalendarioPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-green-50 border-green-200">
+                    <Card className="bg-blue-50 border-blue-200">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-green-800">
-                                Total Receitas
+                            <CardTitle className="text-sm font-medium text-blue-800">
+                                Total de Despesas do Mês
                             </CardTitle>
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <Wallet className="h-4 w-4 text-blue-600" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-green-900">
+                            <div className="text-2xl font-bold text-blue-900">
                                 R${" "}
-                                {totalReceitas.toLocaleString("pt-BR", {
+                                {totalDespesasMes.toLocaleString("pt-BR", {
                                     minimumFractionDigits: 2,
                                 })}
                             </div>
-                            <p className="text-xs text-green-600 mt-1">Receitas do período</p>
+                            <p className="text-xs text-blue-600 mt-1">Despesas do mês atual</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -233,14 +241,12 @@ export default function CalendarioPage() {
                                                             {item.categoria}
                                                         </Badge>
                                                         <span className="text-xs text-muted-foreground">
-                                                            {new Date(
-                                                                item.dataVencimento
-                                                            ).toLocaleDateString("pt-BR")}
+                                                            {formatDateBR(item.dataVencimento)}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="md:text-right flex md:flex-col items-center gap-2">
+                                            <div className="md:text-right flex md:flex-col items-center md:items-end gap-2">
                                                 <p className="font-semibold text-sm text-red-600">
                                                     R${" "}
                                                     {item.valor.toLocaleString("pt-BR", {

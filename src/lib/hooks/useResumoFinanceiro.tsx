@@ -77,12 +77,12 @@ export function useResumoFinanceiro(usuarioId: number) {
 
             // Calcular total de entradas do mês
             const totalEntradas = receitasData.reduce((total: number, receita: ReceitaSelect) => {
-                return total + parseFloat(receita.valor);
+                return total + Number(receita.valor);
             }, 0);
 
             // Calcular total de saídas do mês
             const totalSaidas = despesasData.reduce((total: number, despesa: DespesaSelect) => {
-                return total + parseFloat(despesa.valor);
+                return total + Number(despesa.valor);
             }, 0);
 
             // Calcular categoria que mais impacta (maior gasto)
@@ -90,7 +90,7 @@ export function useResumoFinanceiro(usuarioId: number) {
 
             despesasData.forEach((despesa: DespesaSelect) => {
                 const categoria = despesa.categoria;
-                const valor = parseFloat(despesa.valor);
+                const valor = Number(despesa.valor);
 
                 if (!categoriasDespesas[categoria]) {
                     categoriasDespesas[categoria] = 0;

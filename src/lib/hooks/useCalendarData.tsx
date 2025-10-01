@@ -6,7 +6,7 @@ interface DespesaData {
     id: number;
     descricao: string;
     categoria: string;
-    valor: string;
+    valor: number;
     data: string;
     status: string;
     observacoes?: string;
@@ -17,7 +17,7 @@ interface ReceitaData {
     id: number;
     descricao: string;
     categoria: string;
-    valor: string;
+    valor: number;
     data: string;
     status: string;
     observacoes?: string;
@@ -120,7 +120,7 @@ export function useCalendarData(usuarioId: number): UseCalendarDataReturn {
                     description: `Despesa: ${despesa.descricao}`,
                     extendedProps: {
                         type: "despesa" as const,
-                        valor: parseFloat(despesa.valor),
+                        valor: despesa.valor,
                         categoria: despesa.categoria,
                         status: despesa.status,
                         observacoes: despesa.observacoes,
@@ -140,7 +140,7 @@ export function useCalendarData(usuarioId: number): UseCalendarDataReturn {
                     description: `Receita: ${receita.descricao}`,
                     extendedProps: {
                         type: "receita" as const,
-                        valor: parseFloat(receita.valor),
+                        valor: receita.valor,
                         categoria: receita.categoria,
                         status: receita.status,
                         observacoes: receita.observacoes,

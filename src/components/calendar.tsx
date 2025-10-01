@@ -225,7 +225,7 @@ export default function FullCalendarComponent({
                             <div
                                 ref={calendarRef}
                                 className="w-full min-h-[600px] [&_.fc]:font-sans 
-                                         [&_.fc-toolbar]:mb-4
+                                         [&_.fc-toolbar]:mb-4 flex flex-row
                                          [&_.fc-toolbar-title]:text-xl [&_.fc-toolbar-title]:font-semibold [&_.fc-toolbar-title]:text-gray-900
                                          [&_.fc-button]:bg-blue-600 [&_.fc-button]:border-blue-600 [&_.fc-button]:text-white 
                                          [&_.fc-button]:font-medium [&_.fc-button]:rounded-md [&_.fc-button]:px-4 [&_.fc-button]:py-2
