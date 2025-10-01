@@ -9,6 +9,7 @@ import { ArrowDownRight, ArrowUpRight, TrendingDown } from "lucide-react";
 import { useUltimasAtividades } from "@/lib/hooks/useUltimasAtividades";
 import { useResumoFinanceiro } from "@/lib/hooks/useResumoFinanceiro";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { formatDateBR } from "@/lib/utils/dateUtils";
 
 export default function HomePage() {
     const { user } = useAuth();
@@ -190,10 +191,8 @@ export default function HomePage() {
                                                     {atividade.descricao}
                                                 </p>
                                                 <p className="text-sm text-muted-foreground">
-                                                    {new Date(atividade.data).toLocaleDateString(
-                                                        "pt-BR"
-                                                    )}{" "}
-                                                    • {atividade.categoria}
+                                                    {formatDateBR(atividade.data)} •{" "}
+                                                    {atividade.categoria}
                                                 </p>
                                             </div>
                                         </div>

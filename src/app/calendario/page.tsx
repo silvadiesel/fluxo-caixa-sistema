@@ -15,6 +15,7 @@ import {
 import { AlertTriangle, Clock, TrendingUp } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useFinancialData } from "@/lib/hooks/useFinancialData";
+import { formatDateBR } from "@/lib/utils/dateUtils";
 
 export default function CalendarioPage() {
     const { user } = useAuth();
@@ -35,7 +36,7 @@ export default function CalendarioPage() {
 
                 return {
                     ...item,
-                    valor: parseFloat(item.valor),
+                    valor: item.valor,
                     dataVencimento: item.data,
                     diasRestantes,
                 };
@@ -233,14 +234,12 @@ export default function CalendarioPage() {
                                                             {item.categoria}
                                                         </Badge>
                                                         <span className="text-xs text-muted-foreground">
-                                                            {new Date(
-                                                                item.dataVencimento
-                                                            ).toLocaleDateString("pt-BR")}
+                                                            {formatDateBR(item.dataVencimento)}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="md:text-right flex md:flex-col items-center gap-2">
+                                            <div className="md:text-right flex md:flex-col items-center md:items-end gap-2">
                                                 <p className="font-semibold text-sm text-red-600">
                                                     R${" "}
                                                     {item.valor.toLocaleString("pt-BR", {

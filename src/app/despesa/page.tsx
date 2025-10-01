@@ -1,7 +1,6 @@
 "use client";
 
 import React, { JSX, useCallback, useEffect, useMemo, useState } from "react";
-import dayjs from "@/lib/config/dayjs.config";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -25,7 +24,7 @@ import type { DespesaDados } from "@/lib/types/despesaModal.types";
 import type { ApiListResponse, ListMeta } from "@/lib/types/despesaPage.types";
 import { useCalcDespesas } from "./useCalcDespesas";
 import { useFilterDate } from "@/lib/hooks/useFilterDate";
-import { getDefaultMonthFilter } from "@/lib/utils/dateUtils";
+import { getDefaultMonthFilter, formatDateBR } from "@/lib/utils/dateUtils";
 
 // -----------------------------------------------------------------------------
 const currencyBR = new Intl.NumberFormat("pt-BR", {
@@ -388,7 +387,7 @@ export default function DespesaPage(): JSX.Element {
                                                     {despesa.categoria}
                                                 </Badge>
                                                 <span className="text-sm text-muted-foreground">
-                                                    {dayjs(despesa.data).format("DD/MM/YYYY")}
+                                                    {formatDateBR(despesa.data)}
                                                 </span>
                                             </div>
                                         </div>

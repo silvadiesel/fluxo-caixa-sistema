@@ -1,7 +1,6 @@
 "use client";
 
 import React, { JSX, useCallback, useEffect, useMemo, useState } from "react";
-import dayjs from "@/lib/config/dayjs.config";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -25,7 +24,7 @@ import type { ReceitaDadosUI } from "@/lib/types/receitaModal.types";
 import { useCalcReceitas } from "./useCalcReceitas";
 import { useFilterDate } from "../../lib/hooks/useFilterDate";
 import { toast } from "sonner";
-import { getDefaultMonthFilter } from "@/lib/utils/dateUtils";
+import { getDefaultMonthFilter, formatDateBR } from "@/lib/utils/dateUtils";
 
 // --- Utils ------------------------------------------------------------------
 const currencyBR = new Intl.NumberFormat("pt-BR", {
@@ -384,7 +383,7 @@ export default function ReceitaPage(): JSX.Element {
                                                     {receita.categoria}
                                                 </Badge>
                                                 <span className="text-sm text-muted-foreground">
-                                                    {dayjs(receita.data).format("DD/MM/YYYY")}
+                                                    {formatDateBR(receita.data)}
                                                 </span>
                                             </div>
                                         </div>

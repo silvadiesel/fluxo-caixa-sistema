@@ -49,7 +49,7 @@ export function useUltimasAtividades(usuarioId: number) {
                     tipo: "entrada" as const,
                     descricao: receita.descricao,
                     categoria: receita.categoria,
-                    valor: parseFloat(receita.valor),
+                    valor: Number(receita.valor),
                     data: receita.data,
                     status: receita.status,
                 })
@@ -62,7 +62,7 @@ export function useUltimasAtividades(usuarioId: number) {
                     tipo: "saida" as const,
                     descricao: despesa.descricao,
                     categoria: despesa.categoria,
-                    valor: parseFloat(despesa.valor),
+                    valor: Number(despesa.valor),
                     data: despesa.data,
                     status: despesa.status,
                 })

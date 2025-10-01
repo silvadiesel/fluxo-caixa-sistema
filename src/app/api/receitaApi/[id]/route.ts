@@ -6,8 +6,9 @@ import { updateReceitaSchema } from "@/lib/validator/receitaValidator";
 import { badRequest, notFound, ok, parseId, readJson } from "@/lib/https";
 import { renderReceita } from "@/lib/adapters/receita.adapter";
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-    const id = parseId(params.id);
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
+    const id = parseId(idParam);
     if (!id) return badRequest("Invalid id");
 
     const [row] = await db.select().from(receita).where(eq(receita.id, id)).limit(1);
@@ -15,8 +16,9 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     return ok(renderReceita(row));
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-    const id = parseId(params.id);
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
+    const id = parseId(idParam);
     if (!id) return badRequest("Invalid id");
 
     const { data, error } = await readJson(req, updateReceitaSchema);
@@ -26,6 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         .update(receita)
         .set({
             ...data,
+            valor: data.valor ? Number(data.valor) : undefined,
             observacoes: data.observacoes ?? null,
         })
         .where(eq(receita.id, id))
@@ -35,8 +38,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return ok(renderReceita(row));
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-    const id = parseId(params.id);
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id: idParam } = await params;
+    const id = parseId(idParam);
     if (!id) return badRequest("Invalid id");
 
     const [row] = await db.delete(receita).where(eq(receita.id, id)).returning();
