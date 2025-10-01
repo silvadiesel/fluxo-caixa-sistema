@@ -116,7 +116,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-4">
+        <div className="min-h-screen overflow-y-hidden bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-4">
             <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 <div className="hidden lg:block space-y-8">
                     <div className="space-y-4">
