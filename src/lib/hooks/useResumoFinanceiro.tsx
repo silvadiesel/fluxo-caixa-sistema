@@ -123,6 +123,7 @@ export function useResumoFinanceiro(usuarioId: number) {
 
     useEffect(() => {
         fetchResumoFinanceiro();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [usuarioId]);
 
     return { resumo, loading, error, refetch: fetchResumoFinanceiro };

@@ -425,7 +425,7 @@ export default function RelatorioPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {comparativoMensal.map((mes, index) => (
+                            {comparativoMensal.map((mes) => (
                                 <div
                                     key={mes.mes}
                                     className="flex items-center justify-between p-4 rounded-lg border"
