@@ -30,6 +30,8 @@ import dayjs from "@/lib/config/dayjs.config";
 import { CalendarIcon, Edit, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useParcelas } from "@/lib/hooks/useParcelas";
+import { ParcelasSection } from "@/components/parcelasSection";
 
 interface ModalDespesaProps {
     despesa?: DespesaDados;
@@ -51,12 +53,79 @@ export function ModalDespesa({ despesa, onSave, usuarioId }: ModalDespesaProps) 
         observacoes: despesa?.observacoes ?? "",
     });
 
+    const {
+        possuiParcelas,
+        numeroParcelas,
+        parcelas,
+        handleParcelasChange: handleParcelasChangeHook,
+        handleNumeroParcelasChange: handleNumeroParcelasChangeHook,
+        atualizarParcela,
+        resetarParcelas,
+    } = useParcelas();
+
+    const handleParcelasChange = (checked: boolean) => {
+        handleParcelasChangeHook(checked, formData.valor, formData.data);
+    };
+
+    const handleNumeroParcelasChange = (valor: string) => {
+        handleNumeroParcelasChangeHook(valor, formData.valor, formData.data);
+    };
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
         const uid = Math.abs(parseInt(String(despesa?.usuarioId ?? usuarioId), 10));
         setSubmitting(true);
         try {
+            // Se possui parcelas, criar múltiplas despesas
+            if (possuiParcelas && parcelas.length > 0) {
+                let sucessos = 0;
+                for (let i = 0; i < parcelas.length; i++) {
+                    const parcela = parcelas[i];
+                    const payload = {
+                        descricao: `${formData.descricao} (${parcela.numero}/${parcelas.length})`,
+                        categoria: formData.categoria,
+                        valor: parseFloat(parcela.valor),
+                        data: parcela.data,
+                        status: formData.status,
+                        observacoes: formData.observacoes,
+                        usuarioId: uid,
+                    };
+
+                    const res = await fetch("/api/despesaApi", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+
+                    const json = (await res.json()) as ApiResponse<DespesaDados>;
+
+                    if (res.ok && !isApiError(json)) {
+                        sucessos++;
+                        if (i === parcelas.length - 1) {
+                            onSave?.(json.data);
+                        }
+                    }
+                }
+
+                setOpen(false);
+                toast.success(`${sucessos} despesas parceladas adicionadas com sucesso!`, {
+                    description: `${sucessos} parcelas foram cadastradas.`,
+                });
+
+                setFormData({
+                    descricao: "",
+                    categoria: "",
+                    valor: "",
+                    data: new Date(),
+                    status: "pendente" as status,
+                    observacoes: "",
+                });
+                resetarParcelas();
+                return;
+            }
+
+            // Fluxo normal (sem parcelas)
             let res: Response;
             const payload = {
                 descricao: formData.descricao,
@@ -67,6 +136,7 @@ export function ModalDespesa({ despesa, onSave, usuarioId }: ModalDespesaProps) 
                 observacoes: formData.observacoes,
                 usuarioId: uid,
             };
+
             if (isEditing && despesa?.id) {
                 res = await fetch(`/api/despesaApi/${despesa.id}`, {
                     method: "PATCH",
@@ -80,6 +150,7 @@ export function ModalDespesa({ despesa, onSave, usuarioId }: ModalDespesaProps) 
                     body: JSON.stringify(payload),
                 });
             }
+
             const json = (await res.json()) as ApiResponse<DespesaDados>;
             if (!res.ok || isApiError(json)) {
                 const message = isApiError(json) ? json.error : "Falha ao salvar a despesa.";
@@ -142,7 +213,7 @@ export function ModalDespesa({ despesa, onSave, usuarioId }: ModalDespesaProps) 
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-6 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="descricao">Descrição *</Label>
                             <Input
@@ -281,6 +352,17 @@ export function ModalDespesa({ despesa, onSave, usuarioId }: ModalDespesaProps) 
                                 rows={3}
                             />
                         </div>
+
+                        {!isEditing && (
+                            <ParcelasSection
+                                possuiParcelas={possuiParcelas}
+                                numeroParcelas={numeroParcelas}
+                                parcelas={parcelas}
+                                onParcelasChange={handleParcelasChange}
+                                onNumeroParcelasChange={handleNumeroParcelasChange}
+                                onAtualizarParcela={atualizarParcela}
+                            />
+                        )}
                     </div>
                     <DialogFooter className="pt-6">
                         <Button

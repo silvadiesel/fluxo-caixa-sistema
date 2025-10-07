@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 
 import { ApiResponse, isApiError, ReceitaDadosUI, UiStatus } from "@/lib/types/receitaModal.types";
 import { toast } from "sonner";
+import { useParcelas } from "@/lib/hooks/useParcelas";
+import { ParcelasSection } from "@/components/parcelasSection";
 
 interface ModalReceitaProps {
     receita?: ReceitaDadosUI;
@@ -49,22 +51,87 @@ export function ModalReceita({ receita, usuarioId, onSave }: ModalReceitaProps) 
         observacoes: receita?.observacoes ?? "",
     });
 
+    const {
+        possuiParcelas,
+        numeroParcelas,
+        parcelas,
+        handleParcelasChange: handleParcelasChangeHook,
+        handleNumeroParcelasChange: handleNumeroParcelasChangeHook,
+        atualizarParcela,
+        resetarParcelas,
+    } = useParcelas();
+
+    const handleParcelasChange = (checked: boolean) => {
+        handleParcelasChangeHook(checked, formData.valor, formData.data);
+    };
+
+    const handleNumeroParcelasChange = (valor: string) => {
+        handleNumeroParcelasChangeHook(valor, formData.valor, formData.data);
+    };
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
         const uid = Math.abs(parseInt(String(receita?.usuarioId ?? usuarioId), 10));
-        // Usuário opcional: não bloqueia o fluxo se não houver usuário
 
         setSubmitting(true);
         try {
-            let res: Response;
-
             const statusMapping: Record<UiStatus, string> = {
                 Recebido: "pago",
                 Pendente: "pendente",
                 Cancelado: "cancelado",
             };
 
+            // Se possui parcelas, criar múltiplas receitas
+            if (possuiParcelas && parcelas.length > 0) {
+                let sucessos = 0;
+                for (let i = 0; i < parcelas.length; i++) {
+                    const parcela = parcelas[i];
+                    const payload = {
+                        descricao: `${formData.descricao} (${parcela.numero}/${parcelas.length})`,
+                        categoria: formData.categoria,
+                        valor: parseFloat(parcela.valor),
+                        data: parcela.data,
+                        status: statusMapping[formData.status],
+                        observacoes: formData.observacoes,
+                        usuarioId: uid,
+                    };
+
+                    const res = await fetch("/api/receitaApi", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+
+                    const json = (await res.json()) as ApiResponse<ReceitaDadosUI>;
+
+                    if (res.ok && !isApiError(json)) {
+                        sucessos++;
+                        if (i === parcelas.length - 1) {
+                            onSave?.(json.data);
+                        }
+                    }
+                }
+
+                setOpen(false);
+                toast.success(`${sucessos} receitas parceladas adicionadas com sucesso!`, {
+                    description: `${sucessos} parcelas foram cadastradas.`,
+                });
+
+                setFormData({
+                    descricao: "",
+                    categoria: "",
+                    valor: "",
+                    data: new Date(),
+                    status: "Pendente",
+                    observacoes: "",
+                });
+                resetarParcelas();
+                return;
+            }
+
+            // Fluxo normal (sem parcelas)
+            let res: Response;
             const payload = {
                 descricao: formData.descricao,
                 categoria: formData.categoria,
@@ -74,6 +141,7 @@ export function ModalReceita({ receita, usuarioId, onSave }: ModalReceitaProps) 
                 observacoes: formData.observacoes,
                 usuarioId: uid,
             };
+
             if (isEditing && receita?.id) {
                 res = await fetch(`/api/receitaApi/${receita!.id}`, {
                     method: "PATCH",
@@ -155,7 +223,7 @@ export function ModalReceita({ receita, usuarioId, onSave }: ModalReceitaProps) 
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-6 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="descricao">Descrição *</Label>
                             <Input
@@ -281,6 +349,17 @@ export function ModalReceita({ receita, usuarioId, onSave }: ModalReceitaProps) 
                                 rows={3}
                             />
                         </div>
+
+                        {!isEditing && (
+                            <ParcelasSection
+                                possuiParcelas={possuiParcelas}
+                                numeroParcelas={numeroParcelas}
+                                parcelas={parcelas}
+                                onParcelasChange={handleParcelasChange}
+                                onNumeroParcelasChange={handleNumeroParcelasChange}
+                                onAtualizarParcela={atualizarParcela}
+                            />
+                        )}
                     </div>
 
                     <DialogFooter className="pt-6">
