@@ -69,6 +69,14 @@ export function ModalReceita({ receita, usuarioId, onSave }: ModalReceitaProps) 
         handleNumeroParcelasChangeHook(valor, formData.valor, formData.data);
     };
 
+    // Validação dos campos obrigatórios
+    const camposObrigatoriosPreenchidos =
+        formData.descricao.trim() !== "" &&
+        formData.categoria.trim() !== "" &&
+        formData.valor.trim() !== "" &&
+        parseFloat(formData.valor) > 0 &&
+        formData.data !== null;
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
@@ -358,6 +366,7 @@ export function ModalReceita({ receita, usuarioId, onSave }: ModalReceitaProps) 
                                 onParcelasChange={handleParcelasChange}
                                 onNumeroParcelasChange={handleNumeroParcelasChange}
                                 onAtualizarParcela={atualizarParcela}
+                                disabled={!camposObrigatoriosPreenchidos}
                             />
                         )}
                     </div>

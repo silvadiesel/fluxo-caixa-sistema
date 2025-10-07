@@ -15,6 +15,7 @@ interface ParcelasSectionProps {
     onParcelasChange: (checked: boolean) => void;
     onNumeroParcelasChange: (valor: string) => void;
     onAtualizarParcela: (index: number, campo: "valor" | "data", valor: string | Date) => void;
+    disabled?: boolean;
 }
 
 export function ParcelasSection({
@@ -24,17 +25,27 @@ export function ParcelasSection({
     onParcelasChange,
     onNumeroParcelasChange,
     onAtualizarParcela,
+    disabled = false,
 }: ParcelasSectionProps) {
     return (
         <>
             <div className="flex items-center justify-between border-t pt-4">
                 <div className="flex flex-col gap-1">
-                    <Label htmlFor="parcelas">Esta conta possui parcelas?</Label>
-                    <p className="text-xs text-muted-foreground">
-                        Divida o valor em múltiplas transações mensais
+                    <Label htmlFor="parcelas" className={disabled ? "opacity-50" : ""}>
+                        Esta conta possui parcelas?
+                    </Label>
+                    <p className={`text-xs text-muted-foreground ${disabled ? "opacity-50" : ""}`}>
+                        {disabled
+                            ? "Preencha todos os campos obrigatórios primeiro"
+                            : "Divida o valor em múltiplas transações mensais"}
                     </p>
                 </div>
-                <Switch id="parcelas" checked={possuiParcelas} onCheckedChange={onParcelasChange} />
+                <Switch
+                    id="parcelas"
+                    checked={possuiParcelas}
+                    onCheckedChange={onParcelasChange}
+                    disabled={disabled}
+                />
             </div>
 
             {possuiParcelas && (
