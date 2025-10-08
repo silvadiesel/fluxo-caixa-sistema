@@ -19,6 +19,7 @@ export interface DREDetalhado {
         total: number;
     };
     lucroOperacional: number;
+    receitasFinanceiras: number;
     outrasReceitas: number;
     outrasDespesas: number;
     lucroAntesImposto: number;
@@ -33,8 +34,8 @@ export interface Indicadores {
 }
 
 export interface EvolucaoMensalItem {
-    ano: number;
-    mes: number;
+    mes: string;
+    ano: string;
     receitas: number;
     despesas: number;
     lucro: number;
@@ -45,11 +46,27 @@ export interface TopCategoriaItem {
     total: number;
 }
 
+export interface CategoriaDetalhada {
+    categoria: string;
+    total: number;
+    quantidade: number;
+    tipo: string;
+}
+
 export interface RelatorioPayload {
-    periodo: Periodo;
+    success: boolean;
+    periodo: {
+        tipo: string;
+        dataInicial: string;
+        dataFinal: string;
+    };
     dre: DREDetalhado;
     indicadores: Indicadores;
     evolucaoMensal: EvolucaoMensalItem[];
     topReceitas: TopCategoriaItem[];
     topDespesas: TopCategoriaItem[];
+    detalhamento: {
+        receitas: CategoriaDetalhada[];
+        despesas: CategoriaDetalhada[];
+    };
 }
