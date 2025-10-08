@@ -45,7 +45,7 @@ export function ChartRelatorio({ data }: ChartRelatorioProps) {
                 <CardTitle>Evolução Financeira</CardTitle>
                 <CardDescription>Receitas vs Despesas nos últimos 6 meses</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-1 md:p-4">
                 <ChartContainer config={chartConfig} className="h-[300px] w-full">
                     <BarChart accessibilityLayer data={chartData}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />

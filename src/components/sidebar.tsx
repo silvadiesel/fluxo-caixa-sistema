@@ -9,7 +9,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, Home, Menu, TrendingDown, TrendingUp, X, LogOut } from "lucide-react";
+import { Calendar, Home, Menu, TrendingDown, TrendingUp, X, LogOut, BarChart3 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 
@@ -84,18 +84,18 @@ export const Sidebar = () => {
                             {sidebarOpen && <span className="ml-2">Despesas</span>}
                         </Link>
                     </Button>
-                    {/* <Button
-            asChild
-            variant="ghost"
-            className={`w-full hover:bg-sidebar-accent ${
-              sidebarOpen ? "justify-start" : "justify-center"
-            } ${pathname === "/relatorio" ? "bg-sidebar-accent" : ""}`}
-          >
-            <Link href="/relatorio">
-              <BarChart3 className="h-4 w-4" />
-              {sidebarOpen && <span className="ml-2">Relatórios</span>}
-            </Link>
-          </Button> */}
+                    <Button
+                        asChild
+                        variant="ghost"
+                        className={`w-full hover:bg-sidebar-accent ${
+                            sidebarOpen ? "justify-start" : "justify-center"
+                        } ${pathname === "/relatorio" ? "bg-sidebar-accent" : ""}`}
+                    >
+                        <Link href="/relatorio">
+                            <BarChart3 className="h-4 w-4" />
+                            {sidebarOpen && <span className="ml-2">Relatórios</span>}
+                        </Link>
+                    </Button>
                     <Button
                         asChild
                         variant="ghost"

@@ -104,7 +104,7 @@ export default function RelatorioPage() {
             />
 
             <header className="bg-card border-b border-border p-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 md:gap-0 md:flex-row items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">
                             Relatórios Financeiros
@@ -113,9 +113,9 @@ export default function RelatorioPage() {
                             Demonstrativo de Resultado do Exercício (DRE)
                         </p>
                     </div>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex w-full md:w-auto items-center gap-2 md:gap-4">
                         <Select value={periodo} onValueChange={handlePeriodoChange}>
-                            <SelectTrigger className="w-48">
+                            <SelectTrigger className="md:w-48 w-1/2">
                                 <Calendar className="h-4 w-4 mr-2" />
                                 <SelectValue />
                             </SelectTrigger>
@@ -126,9 +126,9 @@ export default function RelatorioPage() {
                                 <SelectItem value="personalizado">Período Personalizado</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button variant="outline" disabled>
+                        <Button variant="outline" disabled className="w-1/2 md:w-auto">
                             <FileText className="h-4 w-4 mr-2" />
-                            Exportar PDF (em breve)
+                            Exportar PDF
                         </Button>
                     </div>
                 </div>
@@ -529,10 +529,10 @@ export default function RelatorioPage() {
                                             ) => (
                                                 <div
                                                     key={index}
-                                                    className="flex items-center justify-between p-4 rounded-lg border"
+                                                    className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 rounded-lg border"
                                                 >
                                                     <div className="flex items-center space-x-4">
-                                                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                                        <div className="w-12 h-12 rounded-full bg-primary/10 md:flex hidden items-center justify-center">
                                                             <span className="font-semibold text-primary">
                                                                 {mes.mes}
                                                             </span>
@@ -541,7 +541,7 @@ export default function RelatorioPage() {
                                                             <p className="font-medium">
                                                                 {mes.mes} {mes.ano}
                                                             </p>
-                                                            <p className="text-sm text-muted-foreground">
+                                                            <p className="text-sm pb-2 text-muted-foreground">
                                                                 Margem:{" "}
                                                                 {mes.receitas > 0
                                                                     ? (
