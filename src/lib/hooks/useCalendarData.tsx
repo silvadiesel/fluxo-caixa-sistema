@@ -38,7 +38,6 @@ interface CalendarEvent {
         status: string;
         observacoes?: string;
         originalData: DespesaData | ReceitaData;
-        order: number;
     };
 }
 
@@ -132,7 +131,6 @@ export function useCalendarData(usuarioId: number): UseCalendarDataReturn {
                         status: despesa.status,
                         observacoes: despesa.observacoes,
                         originalData: despesa,
-                        order: 1,
                     },
                 })
             );
@@ -152,19 +150,11 @@ export function useCalendarData(usuarioId: number): UseCalendarDataReturn {
                         status: receita.status,
                         observacoes: receita.observacoes,
                         originalData: receita,
-                        order: 2, // Receitas depois
                     },
                 })
             );
 
-            const allEvents = [...despesasEvents, ...receitasEvents].sort((a, b) => {
-                const dateA = new Date(a.start);
-                const dateB = new Date(b.start);
-                if (dateA.getTime() !== dateB.getTime()) {
-                    return dateA.getTime() - dateB.getTime();
-                }
-                return a.extendedProps.order - b.extendedProps.order;
-            });
+            const allEvents = [...despesasEvents, ...receitasEvents];
             setEvents(allEvents);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Erro desconhecido");

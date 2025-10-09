@@ -4,6 +4,7 @@ import FullCalendarComponent from "@/components/calendar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Select,
@@ -13,19 +14,22 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { AlertTriangle, Clock, TrendingUp, Wallet } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useFinancialData } from "@/lib/hooks/useFinancialData";
 import { formatDateBR } from "@/lib/utils/dateUtils";
 
 export default function CalendarioPage() {
     const { user } = useAuth();
     const [filtroStatus, setFiltroStatus] = useState("todas");
+    const [page, setPage] = useState(1);
+    const pageSize = 5; // 5 itens por página
 
     const { despesasReceitas, loading, error, refreshData } = useFinancialData(user?.id || 0);
 
     const dadosProcessados = useMemo(() => {
         const hoje = new Date();
 
+        // Processar apenas despesas pendentes
         return despesasReceitas
             .filter((item) => item.tipo === "despesa" && item.status.toLowerCase() === "pendente")
             .map((item) => {
@@ -40,17 +44,33 @@ export default function CalendarioPage() {
                     dataVencimento: item.data,
                     diasRestantes,
                 };
-            });
+            })
+            .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
     }, [despesasReceitas]);
 
-    const dadosFiltrados = dadosProcessados.filter((item) => {
-        if (filtroStatus === "todas") return true;
-        if (filtroStatus === "vencidas") return item.diasRestantes < 0;
-        if (filtroStatus === "proximas") return item.diasRestantes >= 0 && item.diasRestantes <= 7;
-        if (filtroStatus === "futuras") return item.diasRestantes > 7;
+    const dadosFiltrados = useMemo(() => {
+        return dadosProcessados.filter((item) => {
+            if (filtroStatus === "todas") return true;
+            if (filtroStatus === "vencidas") return item.diasRestantes < 0;
+            if (filtroStatus === "proximas")
+                return item.diasRestantes >= 0 && item.diasRestantes <= 7;
+            if (filtroStatus === "futuras") return item.diasRestantes > 7;
 
-        return true;
-    });
+            return true;
+        });
+    }, [dadosProcessados, filtroStatus]);
+
+    // Calcular dados da paginação
+    const totalItems = dadosFiltrados.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const dadosPaginados = dadosFiltrados.slice(startIndex, endIndex);
+
+    // Reset página quando filtro mudar
+    useEffect(() => {
+        setPage(1);
+    }, [filtroStatus]);
 
     const getStatusColor = (status: string, diasRestantes: number, tipo: string) => {
         if (diasRestantes < 0) return "bg-red-100 text-red-800 border-red-200";
@@ -195,8 +215,8 @@ export default function CalendarioPage() {
                                 <CardTitle>Despesas Pendentes</CardTitle>
                                 <CardDescription>
                                     {loading
-                                        ? "Carregando despesas..."
-                                        : `${dadosFiltrados.length} despesa(s) pendente(s) encontrada(s)`}
+                                        ? "Carregando despesas pendentes..."
+                                        : `${totalItems} despesa(s) pendente(s) encontrada(s) - Página ${page} de ${totalPages}`}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -212,7 +232,7 @@ export default function CalendarioPage() {
                                     </div>
                                 )}
                                 <div className="space-y-3">
-                                    {dadosFiltrados.map((item) => (
+                                    {dadosPaginados.map((item) => (
                                         <div
                                             key={`${item.tipo}-${item.id}`}
                                             className="flex md:flex-row flex-col gap-2 md:gap-0 md:items-center md:justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
@@ -267,7 +287,43 @@ export default function CalendarioPage() {
                                             </div>
                                         </div>
                                     ))}
+
+                                    {dadosPaginados.length === 0 && !loading && (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            Nenhum item encontrado para os filtros selecionados.
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* Controles de Paginação */}
+                                {totalPages > 1 && (
+                                    <div className="mt-6 flex items-center justify-between">
+                                        <p className="text-sm text-muted-foreground">
+                                            Mostrando {startIndex + 1} a{" "}
+                                            {Math.min(endIndex, totalItems)} de {totalItems} itens
+                                        </p>
+                                        <div className="space-x-2">
+                                            <Button
+                                                variant="outline"
+                                                disabled={loading || page <= 1}
+                                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                                size="sm"
+                                            >
+                                                Anterior
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                disabled={loading || page >= totalPages}
+                                                onClick={() =>
+                                                    setPage((p) => Math.min(totalPages, p + 1))
+                                                }
+                                                size="sm"
+                                            >
+                                                Próxima
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

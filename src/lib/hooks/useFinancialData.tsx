@@ -78,13 +78,17 @@ export function useFinancialData(usuarioId: number): UseFinancialDataReturn {
                 return allData;
             };
 
-            // Buscar apenas despesas por enquanto
-            const despesasData = await fetchAllPages("despesaApi", "despesa");
+            // Buscar despesas e receitas
+            const [despesasData, receitasData] = await Promise.all([
+                fetchAllPages("despesaApi", "despesa"),
+                fetchAllPages("receitaApi", "receita"),
+            ]);
 
             console.log("Total de despesas encontradas:", despesasData.length);
+            console.log("Total de receitas encontradas:", receitasData.length);
 
-            // Por enquanto, vamos focar apenas em despesas
-            const allData = despesasData.sort(
+            // Combinar despesas e receitas
+            const allData = [...despesasData, ...receitasData].sort(
                 (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()
             );
 
