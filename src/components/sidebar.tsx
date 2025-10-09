@@ -131,7 +131,11 @@ export const Sidebar = () => {
                         )}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                        <DropdownMenuItem>Configurações</DropdownMenuItem>
+                        <DropdownMenuItem>
+                            <Link href="/configuracao">
+                                <span>Configurações</span>
+                            </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                             onClick={handleLogout}
