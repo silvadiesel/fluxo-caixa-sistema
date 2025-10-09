@@ -47,6 +47,9 @@ const CATEGORIES = [
     { label: "Despesas com salário", value: "Despesas com salario" },
     { label: "Despesa água/luz", value: "Despesa água/luz" },
     { label: "Despesa internet/telefone", value: "Despesa internet/telefone" },
+    { label: "Tarifa Bancária", value: "Tarifa Bancária" },
+    { label: "Empréstimo", value: "Empréstimo" },
+    { label: "Imposto sem salário", value: "Imposto sem salário" },
     { label: "Outros", value: "Outros" },
 ] as const;
 

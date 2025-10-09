@@ -273,6 +273,13 @@ export function ModalDespesa({ despesa, onSave, usuarioId }: ModalDespesaProps) 
                                         <SelectItem value="Despesa internet/telefone">
                                             Despesa internet/telefone
                                         </SelectItem>
+                                        <SelectItem value="Tarifa Bancária">
+                                            Tarifa Bancária
+                                        </SelectItem>
+                                        <SelectItem value="Empréstimo">Empréstimo</SelectItem>
+                                        <SelectItem value="Imposto sem salário">
+                                            Imposto sem salário
+                                        </SelectItem>
                                         <SelectItem value="Outros">Outros</SelectItem>
                                     </SelectContent>
                                 </Select>
