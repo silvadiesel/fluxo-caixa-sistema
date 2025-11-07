@@ -160,7 +160,12 @@ export default function ReceitaPage(): JSX.Element {
     categoriaComMaiorReceita,
     totalPages,
     percentualMesAnterior,
-  } = useCalcReceitas({ itens, meta, dataInicial, dataFinal });
+  } = useCalcReceitas({
+    meta,
+    dataInicial,
+    dataFinal,
+    usuarioId: user?.id,
+  });
 
   const handleDelete = useCallback(
     async (id: number) => {
@@ -414,7 +419,7 @@ export default function ReceitaPage(): JSX.Element {
                     </div>
                   </div>
 
-                  <div className="flex md:flex-row flex-col items-center space-x-4 flex-shrink-0 ml-4">
+                  <div className="flex md:flex-row flex-col items-center space-x-4 shrink-0 ml-4">
                     <div className="text-right">
                       <p className="font-semibold text-green-600 whitespace-nowrap">
                         {currencyBR.format(receita.valor)}

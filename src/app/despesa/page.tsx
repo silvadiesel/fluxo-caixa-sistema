@@ -1,6 +1,6 @@
 "use client";
 
-import React, { JSX, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -61,7 +61,7 @@ function useDebounce<T>(value: T, delay = 350) {
 }
 
 // -----------------------------------------------------------------------------
-export default function DespesaPage(): JSX.Element {
+export default function DespesaPage() {
   const { user, isLoading } = useAuth();
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [filtroStatus, setFiltroStatus] = useState<StatusUI>("todos");
@@ -154,7 +154,12 @@ export default function DespesaPage(): JSX.Element {
     categoriaComMaiorDespesa,
     totalPages,
     percentualMesAnterior,
-  } = useCalcDespesas({ itens, meta, dataInicial, dataFinal });
+  } = useCalcDespesas({
+    meta,
+    dataInicial,
+    dataFinal,
+    usuarioId: user?.id,
+  });
 
   const handleDelete = useCallback(
     async (id?: number) => {
@@ -407,7 +412,7 @@ export default function DespesaPage(): JSX.Element {
                     </div>
                   </div>
 
-                  <div className="flex flex-col md:flex-row items-center space-x-4 flex-shrink-0 ml-4">
+                  <div className="flex flex-col md:flex-row items-center space-x-4 shrink-0 ml-4">
                     <div className="text-right">
                       <p className="font-semibold text-red-600 whitespace-nowrap">
                         {currencyBR.format(
