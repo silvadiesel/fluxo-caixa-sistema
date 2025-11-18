@@ -1,0 +1,29 @@
+export const DRE_GRUPOS = [
+  "RECEITA_BRUTA",
+  "IMPOSTO_SOBRE_RECEITA",
+  "CUSTO_PRODUTO_SERVICO",
+  "DESPESA_OPERACIONAL",
+  "DESPESA_FINANCEIRA",
+  "OUTROS",
+] as const;
+
+export type DreGrupo = (typeof DRE_GRUPOS)[number];
+
+export const DRE_SUBGRUPOS = [
+  "SIMPLES",
+  "ICMS",
+  "FORNECEDORES",
+  "SERVICOS_TERCEIROS",
+  "SALARIOS",
+  "DESPESAS_PESSOAIS",
+  "IMPOSTO_SOBRE_FOLHA",
+  "DESP_OFICINA",
+  "CONTADOR_PROGRAMAS",
+  "AGUA_LUZ_INTERNET",
+  "PRO_LABORE",
+  "EMPRESTIMOS",
+  "JUROS_TAXAS",
+  "OUTROS",
+] as const;
+
+export type DreSubgrupo = (typeof DRE_SUBGRUPOS)[number];
