@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import type { ApiListResponse, ListMeta } from "@/lib/types/receitaPage.types";
 import type { ReceitaDadosUI } from "@/lib/types/receitaModal.types";
 import { useCalcReceitas } from "./useCalcReceitas";
+import { useReceitaCards } from "./useReceitaCards";
 import { useFilterDate } from "../../lib/hooks/useFilterDate";
 import { useCategorias } from "@/lib/hooks/useCategorias";
 import { toast } from "sonner";
@@ -154,17 +155,27 @@ export default function ReceitaPage(): JSX.Element {
     carregar();
   }, [carregar]);
 
-  const {
-    receitasMes,
-    mediaReceitas,
-    categoriaComMaiorReceita,
-    totalPages,
-    percentualMesAnterior,
-  } = useCalcReceitas({
+  const { categoriaComMaiorReceita, totalPages } = useCalcReceitas({
     meta,
     dataInicial,
     dataFinal,
     usuarioId: user?.id,
+  });
+
+  // Hook para calcular os cards baseado nos filtros
+  const {
+    receitasMes: receitasMesFiltradas,
+    mediaReceitas: mediaReceitasFiltrada,
+    labelReceitas,
+    labelMedia,
+    temFiltro,
+  } = useReceitaCards({
+    usuarioId: user?.id,
+    dataInicial,
+    dataFinal,
+    filtroCategoria,
+    filtroStatus,
+    filtroTexto: debouncedBusca,
   });
 
   const handleDelete = useCallback(
@@ -236,23 +247,16 @@ export default function ReceitaPage(): JSX.Element {
           <Card className="bg-blue-50 border-blue-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-blue-800">
-                Receitas do Mês
+                {labelReceitas}
               </CardTitle>
               <TrendingUp className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-900">
-                {currencyBR.format(receitasMes)}
+                {currencyBR.format(receitasMesFiltradas)}
               </div>
               <p className="text-xs text-blue-600 mt-1">
-                {percentualMesAnterior !== 0 ? (
-                  <>
-                    {percentualMesAnterior > 0 ? "+" : ""}
-                    {percentualMesAnterior.toFixed(1)}% vs mês anterior
-                  </>
-                ) : (
-                  "Referente ao mês atual"
-                )}
+                {temFiltro ? "Valores filtrados" : "Referente ao mês atual"}
               </p>
             </CardContent>
           </Card>
@@ -260,15 +264,17 @@ export default function ReceitaPage(): JSX.Element {
           <Card className="bg-purple-50 border-purple-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-purple-800">
-                Média por Receita
+                {labelMedia}
               </CardTitle>
               <BarChart3 className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-900">
-                {currencyBR.format(mediaReceitas)}
+                {currencyBR.format(mediaReceitasFiltrada)}
               </div>
-              <p className="text-xs text-purple-600 mt-1">Valor médio</p>
+              <p className="text-xs text-purple-600 mt-1">
+                {temFiltro ? "Média das receitas filtradas" : "Valor médio"}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -289,6 +295,11 @@ export default function ReceitaPage(): JSX.Element {
                     onChange={(e) => {
                       setPage(1);
                       setBusca(e.target.value);
+                      // Limpa outros filtros ao buscar
+                      if (e.target.value.trim()) {
+                        setFiltroCategoria("todas");
+                        setFiltroStatus("todos");
+                      }
                     }}
                     className="pl-10"
                   />
@@ -300,6 +311,11 @@ export default function ReceitaPage(): JSX.Element {
                 onValueChange={(value) => {
                   setPage(1);
                   setFiltroCategoria(value);
+                  // Limpa outros filtros ao selecionar categoria
+                  if (value !== "todas") {
+                    setFiltroStatus("todos");
+                    setBusca("");
+                  }
                 }}
               >
                 <SelectTrigger className="w-full md:w-48">
@@ -320,6 +336,11 @@ export default function ReceitaPage(): JSX.Element {
                 onValueChange={(value: StatusUI) => {
                   setPage(1);
                   setFiltroStatus(value);
+                  // Limpa outros filtros ao selecionar status
+                  if (value !== "todos") {
+                    setFiltroCategoria("todas");
+                    setBusca("");
+                  }
                 }}
               >
                 <SelectTrigger className="w-full md:w-48">
