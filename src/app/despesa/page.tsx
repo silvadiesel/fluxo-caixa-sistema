@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import type { DespesaDados } from "@/lib/types/despesaModal.types";
 import type { ApiListResponse, ListMeta } from "@/lib/types/despesaPage.types";
 import { useCalcDespesas } from "./useCalcDespesas";
+import { useDespesaCards } from "./useDespesaCards";
 import { useFilterDate } from "@/lib/hooks/useFilterDate";
 import { useCategorias } from "@/lib/hooks/useCategorias";
 import { getDefaultMonthFilter, formatDateBR } from "@/lib/utils/dateUtils";
@@ -148,17 +149,27 @@ export default function DespesaPage() {
     carregar();
   }, [carregar]);
 
-  const {
-    despesasMes,
-    mediaDespesas,
-    categoriaComMaiorDespesa,
-    totalPages,
-    percentualMesAnterior,
-  } = useCalcDespesas({
+  const { categoriaComMaiorDespesa, totalPages } = useCalcDespesas({
     meta,
     dataInicial,
     dataFinal,
     usuarioId: user?.id,
+  });
+
+  // Hook para calcular os cards baseado nos filtros
+  const {
+    despesasMes: despesasMesFiltradas,
+    mediaDespesas: mediaDespesasFiltrada,
+    labelDespesas,
+    labelMedia,
+    temFiltro,
+  } = useDespesaCards({
+    usuarioId: user?.id,
+    dataInicial,
+    dataFinal,
+    filtroCategoria,
+    filtroStatus,
+    filtroTexto: debouncedBusca,
   });
 
   const handleDelete = useCallback(
@@ -231,23 +242,16 @@ export default function DespesaPage() {
           <Card className="bg-orange-50 border-orange-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-orange-800">
-                Despesas do Mês
+                {labelDespesas}
               </CardTitle>
               <TrendingDown className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-900">
-                {currencyBR.format(despesasMes)}
+                {currencyBR.format(despesasMesFiltradas)}
               </div>
               <p className="text-xs text-orange-600 mt-1">
-                {percentualMesAnterior !== 0 ? (
-                  <>
-                    {percentualMesAnterior > 0 ? "+" : ""}
-                    {percentualMesAnterior.toFixed(1)}% vs mês anterior
-                  </>
-                ) : (
-                  "Referente ao mês atual"
-                )}
+                {temFiltro ? "Valores filtrados" : "Referente ao mês atual"}
               </p>
             </CardContent>
           </Card>
@@ -255,16 +259,18 @@ export default function DespesaPage() {
           <Card className="bg-purple-50 border-purple-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-purple-800">
-                Média por Despesa
+                {labelMedia}
               </CardTitle>
               <BarChart3 className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-900">
-                {currencyBR.format(mediaDespesas)}
+                {currencyBR.format(mediaDespesasFiltrada)}
               </div>
               <p className="text-xs text-purple-600 mt-1">
-                Valor médio por transação
+                {temFiltro
+                  ? "Média das despesas filtradas"
+                  : "Valor médio por transação"}
               </p>
             </CardContent>
           </Card>
@@ -286,6 +292,11 @@ export default function DespesaPage() {
                     onChange={(e) => {
                       setPage(1);
                       setBusca(e.target.value);
+                      // Limpa outros filtros ao buscar
+                      if (e.target.value.trim()) {
+                        setFiltroCategoria("todas");
+                        setFiltroStatus("todos");
+                      }
                     }}
                     className="pl-10"
                   />
@@ -297,6 +308,11 @@ export default function DespesaPage() {
                 onValueChange={(value) => {
                   setPage(1);
                   setFiltroCategoria(value);
+                  // Limpa outros filtros ao selecionar categoria
+                  if (value !== "todas") {
+                    setFiltroStatus("todos");
+                    setBusca("");
+                  }
                 }}
               >
                 <SelectTrigger className="w-full md:w-48">
@@ -317,6 +333,11 @@ export default function DespesaPage() {
                 onValueChange={(value: StatusUI) => {
                   setPage(1);
                   setFiltroStatus(value);
+                  // Limpa outros filtros ao selecionar status
+                  if (value !== "todos") {
+                    setFiltroCategoria("todas");
+                    setBusca("");
+                  }
                 }}
               >
                 <SelectTrigger className="w-full md:w-48">
