@@ -257,17 +257,17 @@ export default function RelatorioPage() {
             </div>
 
             {/* DRE + Indicadores + Gráfico */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex gap-6 w-full">
               {/* DRE detalhado */}
-              <Card>
+              <Card className="w-1/2">
                 <CardHeader>
                   <CardTitle>Demonstrativo de Resultado (DRE)</CardTitle>
                   <CardDescription>
                     Estrutura completa do resultado financeiro
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
+                <CardContent>
+                  <div className="">
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="font-medium">Receita Bruta</span>
                       <span className="font-semibold text-green-600">
@@ -385,7 +385,7 @@ export default function RelatorioPage() {
               </Card>
 
               {/* Indicadores + Gráfico */}
-              <div className="space-y-6">
+              <div className="w-1/2 flex flex-col gap-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Indicadores de Performance</CardTitle>
@@ -406,7 +406,7 @@ export default function RelatorioPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-green-700">
-                            {indicadores.margemBruta}%
+                            {indicadores.margemBruta.toFixed(2)}%
                           </p>
                           <Badge
                             variant="outline"
@@ -430,7 +430,7 @@ export default function RelatorioPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-blue-700">
-                            {indicadores.margemOperacional}%
+                            {indicadores.margemOperacional.toFixed(2)}%
                           </p>
                           <Badge
                             variant="outline"
@@ -458,7 +458,7 @@ export default function RelatorioPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-purple-700">
-                            {indicadores.margemLiquida}%
+                            {indicadores.margemLiquida.toFixed(2)}%
                           </p>
                           <Badge
                             variant="outline"

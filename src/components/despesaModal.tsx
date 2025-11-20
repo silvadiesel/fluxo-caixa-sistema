@@ -63,7 +63,7 @@ export function ModalDespesa({
     categoria: despesa?.categoria ?? "",
     valor: despesa ? String(despesa.valor) : "",
     data: new Date(despesa?.data ?? new Date()),
-    status: (despesa?.status ?? "Pendente") as status,
+    status: (despesa?.status ?? "pendente") as status,
     observacoes: despesa?.observacoes ?? "",
   });
 
@@ -101,6 +101,16 @@ export function ModalDespesa({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    // Validação: se tem parcelas, o status é obrigatório
+    if (possuiParcelas && parcelas.length > 0) {
+      if (!formData.status) {
+        toast.error("Status é obrigatório quando há parcelas", {
+          description: "Por favor, selecione um status antes de continuar.",
+        });
+        return;
+      }
+    }
 
     const uid = Math.abs(parseInt(String(despesa?.usuarioId ?? usuarioId), 10));
     setSubmitting(true);
@@ -352,12 +362,15 @@ export function ModalDespesa({
               </div>
 
               <div className="flex flex-col w-1/2 gap-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">
+                  Status{possuiParcelas && !isEditing ? " *" : ""}
+                </Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) =>
                     setFormData({ ...formData, status: value as status })
                   }
+                  required={possuiParcelas && !isEditing}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />

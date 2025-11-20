@@ -100,6 +100,16 @@ export function ModalReceita({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
+    // Validação: se tem parcelas, o status é obrigatório
+    if (possuiParcelas && parcelas.length > 0) {
+      if (!formData.status) {
+        toast.error("Status é obrigatório quando há parcelas", {
+          description: "Por favor, selecione um status antes de continuar.",
+        });
+        return;
+      }
+    }
+
     const uid = Math.abs(parseInt(String(receita?.usuarioId ?? usuarioId), 10));
 
     setSubmitting(true);
@@ -363,12 +373,15 @@ export function ModalReceita({
               </div>
 
               <div className="flex flex-col w-1/2 gap-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">
+                  Status{possuiParcelas && !isEditing ? " *" : ""}
+                </Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) =>
                     setFormData({ ...formData, status: value as UiStatus })
                   }
+                  required={possuiParcelas && !isEditing}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />

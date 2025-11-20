@@ -36,5 +36,17 @@ export async function GET(req: NextRequest) {
     dataFinal,
   });
 
-  return NextResponse.json({ dre });
+  // Calcular indicadores de performance
+  const calcularMargem = (valor: number, receitaLiquida: number): number => {
+    if (receitaLiquida === 0) return 0;
+    return Number(((valor / receitaLiquida) * 100).toFixed(2));
+  };
+
+  const indicadores = {
+    margemBruta: calcularMargem(dre.lucroBruto, dre.receitaLiquida),
+    margemOperacional: calcularMargem(dre.lucroOperacional, dre.receitaLiquida),
+    margemLiquida: calcularMargem(dre.lucroLiquido, dre.receitaLiquida),
+  };
+
+  return NextResponse.json({ dre, indicadores });
 }

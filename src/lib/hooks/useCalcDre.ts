@@ -54,6 +54,7 @@ export async function calcularDre({
     .where(
       and(
         eq(receita.usuarioId, usuarioId),
+        eq(receita.status, "pago"), // Apenas receitas recebidas
         gte(receita.data, dataInicial),
         lte(receita.data, dataFinal)
       )
@@ -77,6 +78,7 @@ export async function calcularDre({
     .where(
       and(
         eq(despesa.usuarioId, usuarioId),
+        eq(despesa.status, "pago"), // Apenas despesas pagas
         gte(despesa.data, dataInicial),
         lte(despesa.data, dataFinal)
       )
@@ -142,7 +144,7 @@ export async function calcularDre({
     receitaLiquida: receitaLiquida ?? 0,
     custoProdutos: custoProdutos ?? 0,
     lucroBruto: lucroBruto ?? 0,
-    despesasOperacionais: despesasOperacionais ?? 0,
+    despesasOperacionais,
     lucroOperacional: lucroOperacional ?? 0,
     receitasFinanceiras,
     outrasReceitas: outrasReceitas ?? 0,
