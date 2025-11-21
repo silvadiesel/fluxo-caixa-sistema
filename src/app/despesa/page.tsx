@@ -32,7 +32,11 @@ import { useCalcDespesas } from "./useCalcDespesas";
 import { useDespesaCards } from "./useDespesaCards";
 import { useFilterDate } from "@/lib/hooks/useFilterDate";
 import { useCategorias } from "@/lib/hooks/useCategorias";
-import { getDefaultMonthFilter, formatDateBR } from "@/lib/utils/dateUtils";
+import {
+  getDefaultMonthFilter,
+  formatDateBR,
+  getCurrentYear,
+} from "@/lib/utils/dateUtils";
 
 // -----------------------------------------------------------------------------
 const currencyBR = new Intl.NumberFormat("pt-BR", {
@@ -67,6 +71,7 @@ export default function DespesaPage() {
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [filtroStatus, setFiltroStatus] = useState<StatusUI>("todos");
   const [filtroMes, setFiltroMes] = useState<string>(getDefaultMonthFilter());
+  const [filtroAno, setFiltroAno] = useState<string>(getCurrentYear());
 
   const { categorias: categoriasList } = useCategorias({
     natureza: "despesa",
@@ -91,7 +96,9 @@ export default function DespesaPage() {
 
   const { dataInicial, dataFinal, MonthSelectComponent } = useFilterDate(
     filtroMes,
-    setFiltroMes
+    setFiltroMes,
+    filtroAno,
+    setFiltroAno
   );
 
   const queryParams = useMemo(() => {
@@ -373,7 +380,9 @@ export default function DespesaPage() {
 
               <MonthSelectComponent
                 filtroMes={filtroMes}
+                filtroAno={filtroAno}
                 setFiltroMes={setFiltroMes}
+                setFiltroAno={setFiltroAno}
                 setPage={setPage}
               />
             </div>

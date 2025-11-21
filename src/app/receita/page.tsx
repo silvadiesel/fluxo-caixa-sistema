@@ -32,7 +32,11 @@ import { useReceitaCards } from "./useReceitaCards";
 import { useFilterDate } from "../../lib/hooks/useFilterDate";
 import { useCategorias } from "@/lib/hooks/useCategorias";
 import { toast } from "sonner";
-import { getDefaultMonthFilter, formatDateBR } from "@/lib/utils/dateUtils";
+import {
+  getDefaultMonthFilter,
+  formatDateBR,
+  getCurrentYear,
+} from "@/lib/utils/dateUtils";
 
 // --- Utils ------------------------------------------------------------------
 const currencyBR = new Intl.NumberFormat("pt-BR", {
@@ -73,6 +77,7 @@ export default function ReceitaPage(): JSX.Element {
   const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [filtroStatus, setFiltroStatus] = useState<StatusUI>("todos");
   const [filtroMes, setFiltroMes] = useState<string>(getDefaultMonthFilter());
+  const [filtroAno, setFiltroAno] = useState<string>(getCurrentYear());
 
   const { categorias: categoriasList } = useCategorias({
     natureza: "receita",
@@ -96,7 +101,9 @@ export default function ReceitaPage(): JSX.Element {
 
   const { dataInicial, dataFinal, MonthSelectComponent } = useFilterDate(
     filtroMes,
-    setFiltroMes
+    setFiltroMes,
+    filtroAno,
+    setFiltroAno
   );
 
   const queryParams = useMemo(() => {
@@ -378,7 +385,9 @@ export default function ReceitaPage(): JSX.Element {
 
               <MonthSelectComponent
                 filtroMes={filtroMes}
+                filtroAno={filtroAno}
                 setFiltroMes={setFiltroMes}
+                setFiltroAno={setFiltroAno}
                 setPage={setPage}
               />
             </div>
