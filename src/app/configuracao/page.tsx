@@ -13,11 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Shield, TableConfig, Trash2, Power } from "lucide-react";
 import { ModalDelete } from "@/components/deleteModal";
-import { useState, useCallback } from "react";
-import { useAuth } from "@/lib/hooks/useAuth";
-import { toast } from "sonner";
-import { useCategorias, type Categoria } from "@/lib/hooks/useCategorias";
-import { normalizeCategoriaNome } from "@/lib/utils/normalizeCategoria";
+import { useCategoriaSection } from "./useCategoriaSection";
+import { useConfig } from "./useConfig";
 
 function CategoriaSection({
   natureza,
@@ -26,161 +23,17 @@ function CategoriaSection({
   natureza: "despesa" | "receita";
   titulo: string;
 }) {
-  const { user } = useAuth();
-  const { categorias, loading, refetch } = useCategorias({
-    natureza,
-    usuarioId: user?.id,
-    incluirInativas: true,
-  });
-
-  const [nomeCategoria, setNomeCategoria] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [processandoId, setProcessandoId] = useState<number | null>(null);
-
-  const handleAdicionar = useCallback(async () => {
-    if (!user?.id) {
-      toast.error("Usuário não autenticado");
-      return;
-    }
-
-    const nomeNormalizado = normalizeCategoriaNome(nomeCategoria);
-    if (!nomeNormalizado) {
-      toast.error("Nome da categoria não pode estar vazio");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/categoriaApi", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          usuarioId: user.id,
-          natureza,
-          nome: nomeNormalizado,
-        }),
-      });
-
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        if (response.ok) {
-          toast.success("Categoria criada com sucesso!");
-          setNomeCategoria("");
-          refetch();
-        } else {
-          const errorMsg = data.error || "Erro ao criar categoria";
-          if (errorMsg.includes("já existe")) {
-            toast.error("Categoria já existe");
-          } else {
-            toast.error(errorMsg);
-          }
-        }
-      } else {
-        const text = await response.text();
-        console.error("Resposta não-JSON ao criar categoria:", text);
-        toast.error(`Erro ao criar categoria (${response.status})`);
-      }
-    } catch (error) {
-      console.error("Erro ao criar categoria:", error);
-      toast.error("Erro interno do servidor");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [nomeCategoria, user?.id, natureza, refetch]);
-
-  const handleToggleAtivo = useCallback(
-    async (categoria: Categoria) => {
-      if (!user?.id) {
-        toast.error("Usuário não autenticado");
-        return;
-      }
-
-      setProcessandoId(categoria.id);
-      try {
-        const response = await fetch(`/api/categoriaApi/${categoria.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ativo: !categoria.ativo,
-          }),
-        });
-
-        if (response.ok) {
-          toast.success(
-            categoria.ativo
-              ? "Categoria desativada com sucesso!"
-              : "Categoria reativada com sucesso!"
-          );
-          refetch();
-        } else {
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const data = await response.json();
-            toast.error(data.error || "Erro ao alterar status da categoria");
-          } else {
-            const text = await response.text();
-            console.error("Resposta não-JSON:", text);
-            toast.error(`Erro ao alterar status (${response.status})`);
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao alterar status da categoria:", error);
-        toast.error("Erro interno do servidor");
-      } finally {
-        setProcessandoId(null);
-      }
-    },
-    [user?.id, refetch]
-  );
-
-  const handleDeletar = useCallback(
-    async (categoria: Categoria) => {
-      if (!user?.id) {
-        toast.error("Usuário não autenticado");
-        return;
-      }
-
-      setProcessandoId(categoria.id);
-      try {
-        const response = await fetch(`/api/categoriaApi/${categoria.id}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (response.ok) {
-          toast.success("Categoria apagada com sucesso!");
-          refetch();
-        } else {
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const data = await response.json();
-            toast.error(data.error || "Erro ao apagar categoria");
-          } else {
-            const text = await response.text();
-            console.error("Resposta não-JSON:", text);
-            toast.error(`Erro ao apagar categoria (${response.status})`);
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao apagar categoria:", error);
-        toast.error("Erro interno do servidor");
-      } finally {
-        setProcessandoId(null);
-      }
-    },
-    [user?.id, refetch]
-  );
-
-  const categoriasOrdenadas = [...categorias].sort((a, b) =>
-    a.nome.localeCompare(b.nome, "pt-BR")
-  );
+  const {
+    nomeCategoria,
+    setNomeCategoria,
+    isSubmitting,
+    processandoId,
+    loading,
+    categoriasOrdenadas,
+    handleAdicionar,
+    handleToggleAtivo,
+    handleDeletar,
+  } = useCategoriaSection(natureza);
 
   return (
     <Card>
@@ -292,66 +145,16 @@ function CategoriaSection({
 }
 
 export default function ConfiguracoesPage() {
-  const { user } = useAuth();
-  const [senhaAtual, setSenhaAtual] = useState("");
-  const [novaSenha, setNovaSenha] = useState("");
-  const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleAlterarSenha = async () => {
-    if (!user) {
-      toast.error("Usuário não autenticado");
-      return;
-    }
-
-    if (!senhaAtual || !novaSenha || !confirmarSenha) {
-      toast.error("Todos os campos são obrigatórios");
-      return;
-    }
-
-    if (novaSenha !== confirmarSenha) {
-      toast.error("A nova senha e confirmação não coincidem");
-      return;
-    }
-
-    if (novaSenha.length < 6) {
-      toast.error("A nova senha deve ter pelo menos 6 caracteres");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/configuracaoApi", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          senhaAtual,
-          novaSenha,
-          confirmarSenha,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Senha alterada com sucesso");
-        setSenhaAtual("");
-        setNovaSenha("");
-        setConfirmarSenha("");
-      } else {
-        toast.error(data.error || "Erro ao alterar senha");
-      }
-    } catch (error) {
-      console.error("Erro ao alterar senha:", error);
-      toast.error("Erro interno do servidor");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    senhaAtual,
+    setSenhaAtual,
+    novaSenha,
+    setNovaSenha,
+    confirmarSenha,
+    setConfirmarSenha,
+    isLoading,
+    handleAlterarSenha,
+  } = useConfig();
 
   return (
     <div className="flex h-screen bg-background">
