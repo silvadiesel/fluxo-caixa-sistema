@@ -33,6 +33,8 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useRelatorio } from "@/lib/hooks/useRelatorio";
 import { ModalPeriodoRelatorio } from "@/components/periodoRelatorioModal";
 import { ChartRelatorio } from "@/components/chartRelatorio";
+import { gerarPDFRelatorio } from "@/components/createPDF";
+import { toast } from "sonner";
 
 export default function RelatorioPage() {
   const { user } = useAuth();
@@ -72,27 +74,41 @@ export default function RelatorioPage() {
 
   const dadosDRE = dados?.dre || {
     receitaBruta: 0,
-    deducoes: 0,
+    deducoes: {
+      imposto: 0,
+    },
     receitaLiquida: 0,
-    custoProdutos: 0,
-    lucroBruto: 0,
-    despesasOperacionais: {
-      vendas: 0,
-      administrativas: 0,
-      financeiras: 0,
+    custoServicos: {
+      fornecedores: 0,
+      servicosTerceiros: 0,
+      fretes: 0,
       total: 0,
     },
-    lucroOperacional: 0,
-    receitasFinanceiras: 0,
-    outrasReceitas: 0,
-    outrasDespesas: 0,
-    lucroAntesImposto: 0,
-    impostoRenda: 0,
-    lucroLiquido: 0,
+    lucroBruto: 0,
+    despesasOperacionais: {
+      despesasFixasVariaveis: 0,
+      salarios: 0,
+      impostoSalarios: 0,
+      despesasPessoal: 0,
+      contadorOutros: 0,
+      aguaLuzInternet: 0,
+      despesasOficina: 0,
+      proLabore: 0,
+      total: 0,
+    },
+    resultadoOperacional: 0,
+    despesasFinanceiras: {
+      emprestimos: 0,
+      jurosTaxas: 0,
+      total: 0,
+    },
+    jurosPagos: 0,
+    lucro: 0,
   };
 
   const comparativoMensal = dados?.evolucaoMensal || [];
-  const dadosGrafico = comparativoMensal;
+  // Pegar os últimos 6 meses para o gráfico
+  const dadosGrafico = comparativoMensal.slice(-6);
   const dadosTabela = comparativoMensal.slice(-3);
 
   const indicadores = dados?.indicadores || {
@@ -111,6 +127,21 @@ export default function RelatorioPage() {
     if (valor >= 0)
       return { texto: "Regular", cor: "text-orange-600 border-orange-300" };
     return { texto: "Negativo", cor: "text-red-600 border-red-300" };
+  };
+
+  const handleExportarPDF = async () => {
+    if (!dados) {
+      toast.error("Nenhum relatório disponível para exportar");
+      return;
+    }
+
+    try {
+      await gerarPDFRelatorio(dados);
+      toast.success("PDF gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar PDF");
+    }
   };
 
   return (
@@ -146,7 +177,12 @@ export default function RelatorioPage() {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" disabled className="w-1/2 md:w-auto">
+            <Button
+              variant="outline"
+              onClick={handleExportarPDF}
+              disabled={!dados || loading}
+              className="w-1/2 md:w-auto"
+            >
               <FileText className="h-4 w-4 mr-2" />
               Exportar PDF
             </Button>
@@ -225,7 +261,7 @@ export default function RelatorioPage() {
                 <CardContent>
                   <div className="text-2xl font-bold text-purple-900">
                     R{"$ "}
-                    {dadosDRE.lucroOperacional.toLocaleString("pt-BR", {
+                    {dadosDRE.resultadoOperacional.toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                     })}
                   </div>
@@ -238,14 +274,14 @@ export default function RelatorioPage() {
               <Card className="bg-orange-50 border-orange-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-orange-800">
-                    Lucro Líquido
+                    Lucro
                   </CardTitle>
                   <PieChart className="h-4 w-4 text-orange-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-orange-900">
                     R{"$ "}
-                    {dadosDRE.lucroLiquido.toLocaleString("pt-BR", {
+                    {dadosDRE.lucro.toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                     })}
                   </div>
@@ -279,12 +315,10 @@ export default function RelatorioPage() {
                     </div>
 
                     <div className="flex justify-between items-center py-2 pl-4">
-                      <span className="text-muted-foreground">
-                        (-) Deduções
-                      </span>
+                      <span className="text-muted-foreground">(-) Imposto</span>
                       <span className="text-red-600">
                         R{"$ "}
-                        {dadosDRE.deducoes.toLocaleString("pt-BR", {
+                        {dadosDRE.deducoes.imposto.toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
                         })}
                       </span>
@@ -300,16 +334,43 @@ export default function RelatorioPage() {
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center py-2 pl-4">
-                      <span className="text-muted-foreground">
-                        (-) Custo dos Produtos
-                      </span>
-                      <span className="text-red-600">
-                        R{"$ "}
-                        {dadosDRE.custoProdutos.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
+                    <div className="pl-4 space-y-1">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Fornecedores
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.custoServicos.fornecedores.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Serviços de Terceiros
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.custoServicos.servicosTerceiros.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Fretes
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.custoServicos.fretes.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="flex justify-between items-center py-2 border-b font-medium bg-blue-50 px-2 rounded">
@@ -322,14 +383,14 @@ export default function RelatorioPage() {
                       </span>
                     </div>
 
-                    <div className="pl-4 space-y-2">
+                    <div className="pl-4 space-y-1">
                       <div className="flex justify-between items-center py-1">
                         <span className="text-muted-foreground text-sm">
-                          (-) Despesas de Vendas
+                          (-) Despesas Fixas e Variáveis
                         </span>
                         <span className="text-red-600 text-sm">
                           R{"$ "}
-                          {dadosDRE.despesasOperacionais.vendas.toLocaleString(
+                          {dadosDRE.despesasOperacionais.despesasFixasVariaveis.toLocaleString(
                             "pt-BR",
                             { minimumFractionDigits: 2 }
                           )}
@@ -337,11 +398,11 @@ export default function RelatorioPage() {
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-muted-foreground text-sm">
-                          (-) Despesas Administrativas
+                          (-) Despesas c/ Salários
                         </span>
                         <span className="text-red-600 text-sm">
                           R{"$ "}
-                          {dadosDRE.despesasOperacionais.administrativas.toLocaleString(
+                          {dadosDRE.despesasOperacionais.salarios.toLocaleString(
                             "pt-BR",
                             { minimumFractionDigits: 2 }
                           )}
@@ -349,11 +410,71 @@ export default function RelatorioPage() {
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-muted-foreground text-sm">
-                          (-) Despesas Financeiras
+                          (-) Imposto s/ Salários
                         </span>
                         <span className="text-red-600 text-sm">
                           R{"$ "}
-                          {dadosDRE.despesasOperacionais.financeiras.toLocaleString(
+                          {dadosDRE.despesasOperacionais.impostoSalarios.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Despesas com Pessoal
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.despesasOperacionais.despesasPessoal.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Contador e Outros
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.despesasOperacionais.contadorOutros.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Água/Luz/Internet/Telefone
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.despesasOperacionais.aguaLuzInternet.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Despesas Oficina
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.despesasOperacionais.despesasOficina.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Despesas Pessoais/Pró-labore
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.despesasOperacionais.proLabore.toLocaleString(
                             "pt-BR",
                             { minimumFractionDigits: 2 }
                           )}
@@ -362,20 +483,61 @@ export default function RelatorioPage() {
                     </div>
 
                     <div className="flex justify-between items-center py-2 border-b font-medium bg-purple-50 px-2 rounded">
-                      <span>Lucro Operacional</span>
+                      <span>Resultado Operacional</span>
                       <span className="text-purple-700">
                         R{"$ "}
-                        {dadosDRE.lucroOperacional.toLocaleString("pt-BR", {
+                        {dadosDRE.resultadoOperacional.toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
                         })}
                       </span>
                     </div>
 
+                    <div className="pl-4 space-y-1 pt-2">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Empréstimos
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.despesasFinanceiras.emprestimos.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-muted-foreground text-sm">
+                          (-) Juros/Taxas Bancárias
+                        </span>
+                        <span className="text-red-600 text-sm">
+                          R{"$ "}
+                          {dadosDRE.despesasFinanceiras.jurosTaxas.toLocaleString(
+                            "pt-BR",
+                            { minimumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    {dadosDRE.jurosPagos > 0 && (
+                      <div className="flex justify-between items-center py-2 mt-2 border-t border-dashed">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Juros Pagos
+                        </span>
+                        <span className="text-sm font-semibold text-orange-600">
+                          R{"$ "}
+                          {dadosDRE.jurosPagos.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between items-center py-3 border-t-2 font-bold bg-orange-50 px-2 rounded">
-                      <span>Lucro Líquido</span>
+                      <span>Lucro</span>
                       <span className="text-orange-700 text-lg">
                         R{"$ "}
-                        {dadosDRE.lucroLiquido.toLocaleString("pt-BR", {
+                        {dadosDRE.lucro.toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
                         })}
                       </span>

@@ -36,11 +36,29 @@ export function useRelatorio() {
         }
 
         const data = await response.json();
-        setDados(data);
+
+        // Adicionar período e campos opcionais aos dados
+        const dadosCompletos: RelatorioPayload = {
+          ...data,
+          success: true,
+          periodo: {
+            tipo: tipoPeriodo,
+            dataInicial: periodo.dataInicial,
+            dataFinal: periodo.dataFinal,
+          },
+          topReceitas: data.topReceitas || [],
+          topDespesas: data.topDespesas || [],
+          detalhamento: data.detalhamento || {
+            receitas: [],
+            despesas: [],
+          },
+        };
+
+        setDados(dadosCompletos);
 
         toast.success("Relatório gerado com sucesso!");
 
-        return data;
+        return dadosCompletos;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Erro ao gerar relatório";
