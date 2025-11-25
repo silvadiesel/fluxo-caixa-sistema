@@ -20,13 +20,14 @@ export interface DREDetalhado {
   };
   lucroBruto: number;
   despesasOperacionais: {
-    despesasFixasVariaveis: number;
     salarios: number;
     impostoSalarios: number;
     despesasPessoal: number;
     contadorOutros: number;
-    aguaLuzInternet: number;
+    aguaLuz: number;
+    internetTelefone: number;
     despesasOficina: number;
+    despesasPessoais: number;
     proLabore: number;
     total: number;
   };

@@ -214,17 +214,7 @@ function RelatorioPDF({ dados }: RelatorioPDFProps) {
 
           <View style={{ paddingLeft: 15, marginTop: 5 }}>
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>
-                (-) Despesas Fixas e Variáveis
-              </Text>
-              <Text style={styles.rowValueNegative}>
-                {formatCurrency(
-                  dre.despesasOperacionais.despesasFixasVariaveis
-                )}
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>(-) Despesas c/ Salários</Text>
+              <Text style={styles.rowLabel}>(-) Salários</Text>
               <Text style={styles.rowValueNegative}>
                 {formatCurrency(dre.despesasOperacionais.salarios)}
               </Text>
@@ -248,11 +238,15 @@ function RelatorioPDF({ dados }: RelatorioPDFProps) {
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>
-                (-) Água/Luz/Internet/Telefone
-              </Text>
+              <Text style={styles.rowLabel}>(-) Água e Luz</Text>
               <Text style={styles.rowValueNegative}>
-                {formatCurrency(dre.despesasOperacionais.aguaLuzInternet)}
+                {formatCurrency(dre.despesasOperacionais.aguaLuz)}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>(-) Internet e Telefone</Text>
+              <Text style={styles.rowValueNegative}>
+                {formatCurrency(dre.despesasOperacionais.internetTelefone)}
               </Text>
             </View>
             <View style={styles.row}>
@@ -262,9 +256,13 @@ function RelatorioPDF({ dados }: RelatorioPDFProps) {
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>
-                (-) Despesas Pessoais/Pró-labore
+              <Text style={styles.rowLabel}>(-) Despesas Pessoais</Text>
+              <Text style={styles.rowValueNegative}>
+                {formatCurrency(dre.despesasOperacionais.despesasPessoais)}
               </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>(-) Pró-labore</Text>
               <Text style={styles.rowValueNegative}>
                 {formatCurrency(dre.despesasOperacionais.proLabore)}
               </Text>
@@ -292,20 +290,6 @@ function RelatorioPDF({ dados }: RelatorioPDFProps) {
               </Text>
             </View>
           </View>
-
-          {dre.jurosPagos > 0 && (
-            <View
-              style={[
-                styles.row,
-                { marginTop: 5, borderTop: "1 dashed #cbd5e1" },
-              ]}
-            >
-              <Text style={styles.rowLabel}>Juros Pagos</Text>
-              <Text style={[styles.rowValue, { color: "#ea580c" }]}>
-                {formatCurrency(dre.jurosPagos)}
-              </Text>
-            </View>
-          )}
 
           <View
             style={[

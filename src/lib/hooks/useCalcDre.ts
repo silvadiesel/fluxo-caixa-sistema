@@ -18,13 +18,14 @@ export interface DreResultado {
   };
   lucroBruto: number;
   despesasOperacionais: {
-    despesasFixasVariaveis: number;
     salarios: number;
     impostoSalarios: number;
     despesasPessoal: number;
     contadorOutros: number;
-    aguaLuzInternet: number;
+    aguaLuz: number;
+    internetTelefone: number;
     despesasOficina: number;
+    despesasPessoais: number;
     proLabore: number;
     total: number;
   };
@@ -99,28 +100,20 @@ export async function calcularDre({
       )
     );
 
-  const sum = (nums: (number | null | undefined)[]) =>
-    nums.reduce((acc, n) => (acc ?? 0) + (n ?? 0), 0);
+  const sum = (nums: (number | null | undefined)[]): number =>
+    nums.reduce<number>((acc, n) => acc + (n ?? 0), 0);
 
   // Função auxiliar para normalizar nome da categoria (case-insensitive)
   const normalizeNome = (nome: string | null | undefined) =>
     nome?.toLowerCase().trim() || "";
 
-  // Receita Bruta: TODAS as receitas pagas, sem exceção
+  // Receita Bruta: TODAS as receitas pagas
   const receitaBruta = sum(receitas.map((r) => r.valor));
 
-  // Deduções: Imposto - agrupa por nome da categoria
-  // Busca todas as categorias que contêm "imposto" no nome
+  // Deduções: Imposto - apenas despesas marcadas como "Impostos"
   const deducoesImposto = sum(
     despesas
-      .filter((d) => {
-        const nomeCategoria = normalizeNome(d.categoria);
-        return (
-          nomeCategoria.includes("imposto") ||
-          nomeCategoria.includes("simples") ||
-          nomeCategoria.includes("icms")
-        );
-      })
+      .filter((d) => normalizeNome(d.categoria) === "impostos")
       .map((d) => d.valor)
   );
 
@@ -130,49 +123,29 @@ export async function calcularDre({
 
   const receitaLiquida = receitaBruta - deducoes.imposto;
 
-  // Custos de Serviços: agrupa por nome da categoria
-  // FORNECEDORES: todas as categorias que contêm "fornecedor" no nome
+  const isCategoria = (
+    valorCategoria: string | null | undefined,
+    alvo: string
+  ) => normalizeNome(valorCategoria) === normalizeNome(alvo);
+
+  // FORNECEDORES: todas as despesas marcadas com categoria "Fornecedores"
   const fornecedores = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        // Exclui fretes e serviços de terceiros do cálculo de fornecedores
-        if (
-          nomeNormalizado.includes("frete") ||
-          nomeNormalizado.includes("serviço") ||
-          nomeNormalizado.includes("terceiro")
-        ) {
-          return false;
-        }
-        return (
-          nomeNormalizado.includes("fornecedor") ||
-          nomeNormalizado.includes("fornecedores")
-        );
-      })
+      .filter((d) => isCategoria(d.categoria, "Fornecedores"))
       .map((d) => d.valor)
   );
 
   // SERVIÇOS DE TERCEIROS: todas as categorias que contêm "serviço" ou "terceiro" no nome
   const servicosTerceiros = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("serviço") ||
-          nomeNormalizado.includes("servico") ||
-          nomeNormalizado.includes("terceiro")
-        );
-      })
+      .filter((d) => isCategoria(d.categoria, "Serviço De Terceiro"))
       .map((d) => d.valor)
   );
 
   // FRETES: todas as categorias que contêm "frete" no nome
   const fretes = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return nomeNormalizado.includes("frete");
-      })
+      .filter((d) => isCategoria(d.categoria, "Frete"))
       .map((d) => d.valor)
   );
 
@@ -185,201 +158,89 @@ export async function calcularDre({
 
   const lucroBruto = receitaLiquida - custoServicos.total;
 
-  // Despesas Operacionais: agrupa por nome da categoria
-  // Despesas Fixas e Variáveis: categorias que não se encaixam em outras categorias específicas
-  // (será calculado como o que sobra após subtrair as outras despesas operacionais)
-
   // SALÁRIOS: todas as categorias que contêm "salário", "salario" ou "folha" no nome
   const salarios = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("salário") ||
-          nomeNormalizado.includes("salario") ||
-          nomeNormalizado.includes("folha")
-        );
-      })
+      .filter((d) => isCategoria(d.categoria, "Salário"))
       .map((d) => d.valor)
   );
 
-  // IMPOSTO SOBRE SALÁRIOS: categorias que contêm "imposto" e ("folha" ou "salário")
+  // IMPOSTO SEM SALÁRIOS: categorias que contêm "imposto" e não são "salário"
   const impostoSalarios = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          (nomeNormalizado.includes("imposto") &&
-            (nomeNormalizado.includes("folha") ||
-              nomeNormalizado.includes("salário") ||
-              nomeNormalizado.includes("salario"))) ||
-          nomeNormalizado.includes("inss") ||
-          nomeNormalizado.includes("fgts")
-        );
-      })
+      .filter((d) => isCategoria(d.categoria, "Imposto Sem Salário"))
       .map((d) => d.valor)
   );
 
   // DESPESAS COM PESSOAL: categorias que contêm "pessoal", "benefício" ou "beneficio"
   const despesasPessoal = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("pessoal") ||
-          nomeNormalizado.includes("benefício") ||
-          nomeNormalizado.includes("beneficio")
-        );
-      })
+      .filter((d) => isCategoria(d.categoria, "Despesa Com Pessoal"))
       .map((d) => d.valor)
   );
 
   // CONTADOR E OUTROS: categorias que contêm "contador", "programa", "software" ou "sistema"
   const contadorOutros = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("contador") ||
-          nomeNormalizado.includes("programa") ||
-          nomeNormalizado.includes("software") ||
-          nomeNormalizado.includes("sistema")
-        );
-      })
+      .filter(
+        (d) =>
+          isCategoria(d.categoria, "Contador") ||
+          isCategoria(d.categoria, "Outros")
+      )
       .map((d) => d.valor)
   );
 
-  // ÁGUA/LUZ/INTERNET: categorias que contêm essas palavras
-  const aguaLuzInternet = sum(
+  // ÁGUA e LUZ - comparação exata (case-sensitive) para evitar duplicatas
+  const aguaLuz = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("água") ||
-          nomeNormalizado.includes("agua") ||
-          nomeNormalizado.includes("luz") ||
-          nomeNormalizado.includes("energia") ||
-          nomeNormalizado.includes("internet") ||
-          nomeNormalizado.includes("telefone") ||
-          nomeNormalizado.includes("telecomunicação") ||
-          nomeNormalizado.includes("telecomunicacao")
-        );
-      })
+      .filter((d) => d.categoria === "Despesa Água/luz")
+      .map((d) => d.valor)
+  );
+  const internetTelefone = sum(
+    despesas
+      .filter((d) => isCategoria(d.categoria, "Despesa Internet/telefone"))
       .map((d) => d.valor)
   );
 
   // DESPESAS OFICINA: categorias que contêm "oficina", "manutenção" ou "manutencao"
   const despesasOficina = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("oficina") ||
-          nomeNormalizado.includes("manutenção") ||
-          nomeNormalizado.includes("manutencao")
-        );
-      })
+      .filter((d) => isCategoria(d.categoria, "Despesa Oficina"))
       .map((d) => d.valor)
   );
 
   // PRÓ-LABORE: categorias que contêm "pró-labore", "pro-labore", "prolabore" ou "pró labore"
   const proLabore = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("pró-labore") ||
-          nomeNormalizado.includes("pro-labore") ||
-          nomeNormalizado.includes("prolabore") ||
-          nomeNormalizado.includes("pró labore")
-        );
-      })
+      .filter((d) => isCategoria(d.categoria, "Pro-labore"))
       .map((d) => d.valor)
   );
 
-  // DESPESAS FIXAS E VARIÁVEIS: todas as outras despesas que não se encaixam nas categorias acima
-  // e que não são custos de serviços, impostos sobre receita ou despesas financeiras
-  const despesasFixasVariaveis = sum(
+  const despesasPessoais = sum(
     despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        // Exclui custos de serviços
-        if (
-          nomeNormalizado.includes("fornecedor") ||
-          nomeNormalizado.includes("serviço") ||
-          nomeNormalizado.includes("servico") ||
-          nomeNormalizado.includes("terceiro") ||
-          nomeNormalizado.includes("frete")
-        ) {
-          return false;
-        }
-        // Exclui impostos sobre receita
-        if (
-          nomeNormalizado.includes("imposto") &&
-          !nomeNormalizado.includes("folha") &&
-          !nomeNormalizado.includes("salário") &&
-          !nomeNormalizado.includes("salario")
-        ) {
-          return false;
-        }
-        // Exclui despesas operacionais específicas já categorizadas
-        if (
-          nomeNormalizado.includes("salário") ||
-          nomeNormalizado.includes("salario") ||
-          nomeNormalizado.includes("folha") ||
-          nomeNormalizado.includes("pessoal") ||
-          nomeNormalizado.includes("benefício") ||
-          nomeNormalizado.includes("beneficio") ||
-          nomeNormalizado.includes("contador") ||
-          nomeNormalizado.includes("programa") ||
-          nomeNormalizado.includes("software") ||
-          nomeNormalizado.includes("sistema") ||
-          nomeNormalizado.includes("água") ||
-          nomeNormalizado.includes("agua") ||
-          nomeNormalizado.includes("luz") ||
-          nomeNormalizado.includes("energia") ||
-          nomeNormalizado.includes("internet") ||
-          nomeNormalizado.includes("telefone") ||
-          nomeNormalizado.includes("oficina") ||
-          nomeNormalizado.includes("manutenção") ||
-          nomeNormalizado.includes("manutencao") ||
-          nomeNormalizado.includes("pró-labore") ||
-          nomeNormalizado.includes("pro-labore") ||
-          nomeNormalizado.includes("prolabore")
-        ) {
-          return false;
-        }
-        // Exclui despesas financeiras
-        if (
-          nomeNormalizado.includes("juros") ||
-          nomeNormalizado.includes("empréstimo") ||
-          nomeNormalizado.includes("emprestimo") ||
-          nomeNormalizado.includes("taxa")
-        ) {
-          return false;
-        }
-        return true;
-      })
+      .filter((d) => isCategoria(d.categoria, "Despesa Pessoal"))
       .map((d) => d.valor)
   );
 
   const despesasOperacionais = {
-    despesasFixasVariaveis: despesasFixasVariaveis ?? 0,
     salarios: salarios ?? 0,
     impostoSalarios: impostoSalarios ?? 0,
     despesasPessoal: despesasPessoal ?? 0,
     contadorOutros: contadorOutros ?? 0,
-    aguaLuzInternet: aguaLuzInternet ?? 0,
+    aguaLuz: aguaLuz ?? 0,
+    internetTelefone: internetTelefone ?? 0,
     despesasOficina: despesasOficina ?? 0,
+    despesasPessoais: despesasPessoais ?? 0,
     proLabore: proLabore ?? 0,
     total:
-      (despesasFixasVariaveis ?? 0) +
       (salarios ?? 0) +
       (impostoSalarios ?? 0) +
       (despesasPessoal ?? 0) +
       (contadorOutros ?? 0) +
-      (aguaLuzInternet ?? 0) +
+      (aguaLuz ?? 0) +
       (despesasOficina ?? 0) +
+      (internetTelefone ?? 0) +
+      (despesasPessoais ?? 0) +
       (proLabore ?? 0),
   };
 

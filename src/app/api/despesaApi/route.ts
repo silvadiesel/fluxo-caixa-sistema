@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   const where: SQL[] = [];
   if (q.usuarioId !== undefined) where.push(eq(despesa.usuarioId, q.usuarioId));
-  if (q.categoria) where.push(like(despesa.categoria, `%${q.categoria}%`));
+  if (q.categoria) where.push(eq(despesa.categoria, q.categoria));
   if (q.status) where.push(eq(despesa.status, q.status));
   if (q.texto) where.push(like(despesa.descricao, `%${q.texto}%`));
   if (q.dataInicial) where.push(gte(despesa.data, q.dataInicial));
