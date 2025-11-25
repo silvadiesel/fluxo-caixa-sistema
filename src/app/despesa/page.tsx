@@ -299,11 +299,6 @@ export default function DespesaPage() {
                     onChange={(e) => {
                       setPage(1);
                       setBusca(e.target.value);
-                      // Limpa outros filtros ao buscar
-                      if (e.target.value.trim()) {
-                        setFiltroCategoria("todas");
-                        setFiltroStatus("todos");
-                      }
                     }}
                     className="pl-10"
                   />
@@ -315,11 +310,6 @@ export default function DespesaPage() {
                 onValueChange={(value) => {
                   setPage(1);
                   setFiltroCategoria(value);
-                  // Limpa outros filtros ao selecionar categoria
-                  if (value !== "todas") {
-                    setFiltroStatus("todos");
-                    setBusca("");
-                  }
                 }}
               >
                 <SelectTrigger className="w-full md:w-48">
@@ -340,11 +330,6 @@ export default function DespesaPage() {
                 onValueChange={(value: StatusUI) => {
                   setPage(1);
                   setFiltroStatus(value);
-                  // Limpa outros filtros ao selecionar status
-                  if (value !== "todos") {
-                    setFiltroCategoria("todas");
-                    setBusca("");
-                  }
                 }}
               >
                 <SelectTrigger className="w-full md:w-48">
