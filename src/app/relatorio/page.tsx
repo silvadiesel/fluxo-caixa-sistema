@@ -303,9 +303,9 @@ export default function RelatorioPage() {
             </div>
 
             {/* DRE + Indicadores + Gráfico */}
-            <div className="flex gap-6 w-full">
+            <div className="flex md:flex-row flex-col gap-6 w-full">
               {/* DRE detalhado */}
-              <Card className="w-1/2">
+              <Card className="w-full md:w-1/2">
                 <CardHeader>
                   <CardTitle>Demonstrativo de Resultado (DRE)</CardTitle>
                   <CardDescription>
@@ -555,7 +555,7 @@ export default function RelatorioPage() {
               </Card>
 
               {/* Indicadores + Gráfico */}
-              <div className="w-1/2 flex flex-col gap-6">
+              <div className="w-full md:w-1/2 flex flex-col gap-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Indicadores de Performance</CardTitle>
@@ -687,28 +687,30 @@ export default function RelatorioPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex space-x-8 text-right">
-                          <div>
-                            <p className="text-sm text-muted-foreground">
-                              Receitas
-                            </p>
-                            <p className="font-semibold text-green-600">
-                              R{"$ "}
-                              {mes.receitas.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">
-                              Despesas
-                            </p>
-                            <p className="font-semibold text-red-600">
-                              R{"$ "}
-                              {mes.despesas.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </p>
+                        <div className="flex flex-col md:flex-row gap-2 md:gap-8 md:text-right">
+                          <div className="flex gap-8">
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Receitas
+                              </p>
+                              <p className="font-semibold text-green-600">
+                                R{"$ "}
+                                {mes.receitas.toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Despesas
+                              </p>
+                              <p className="font-semibold text-red-600">
+                                R{"$ "}
+                                {mes.despesas.toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </p>
+                            </div>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">
