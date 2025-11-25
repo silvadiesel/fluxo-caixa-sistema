@@ -106,30 +106,20 @@ export async function calcularDre({
   const normalizeNome = (nome: string | null | undefined) =>
     nome?.toLowerCase().trim() || "";
 
-  // Receita Bruta: TODOS os recebimentos (status "pago"), incluindo juros
+  // Receita Bruta: TODAS as receitas pagas, sem exceção
   const receitaBruta = sum(receitas.map((r) => r.valor));
 
-  // Deduções: Imposto (SIMPLES + ICMS unificados)
-  // Soma apenas despesas com categoria "Impostos" ou que tenham dreGrupo correto
+  // Deduções: Imposto - agrupa por nome da categoria
+  // Busca todas as categorias que contêm "imposto" no nome
   const deducoesImposto = sum(
     despesas
       .filter((d) => {
         const nomeCategoria = normalizeNome(d.categoria);
-
-        // Verifica pelos campos DRE
-        if (
-          d.dreGrupo === "IMPOSTO_SOBRE_RECEITA" &&
-          (d.dreSubgrupo === "SIMPLES" || d.dreSubgrupo === "ICMS")
-        ) {
-          return true;
-        }
-
-        // Fallback: verifica apenas por nome da categoria "Impostos"
-        if (nomeCategoria === "impostos" || nomeCategoria === "imposto") {
-          return true;
-        }
-
-        return false;
+        return (
+          nomeCategoria.includes("imposto") ||
+          nomeCategoria.includes("simples") ||
+          nomeCategoria.includes("icms")
+        );
       })
       .map((d) => d.valor)
   );
@@ -140,43 +130,49 @@ export async function calcularDre({
 
   const receitaLiquida = receitaBruta - deducoes.imposto;
 
-  // Custos de Serviços: FORNECEDORES + SERVICOS_TERCEIROS + FRETES
+  // Custos de Serviços: agrupa por nome da categoria
+  // FORNECEDORES: todas as categorias que contêm "fornecedor" no nome
   const fornecedores = sum(
     despesas
       .filter((d) => {
         const nomeNormalizado = normalizeNome(d.categoria);
-        // Exclui fretes do cálculo de fornecedores
-        if (nomeNormalizado === "frete" || nomeNormalizado.includes("frete")) {
+        // Exclui fretes e serviços de terceiros do cálculo de fornecedores
+        if (
+          nomeNormalizado.includes("frete") ||
+          nomeNormalizado.includes("serviço") ||
+          nomeNormalizado.includes("terceiro")
+        ) {
           return false;
         }
         return (
-          (d.dreGrupo === "CUSTO_PRODUTO_SERVICO" &&
-            d.dreSubgrupo === "FORNECEDORES") ||
-          // Fallback: se dreGrupo for OUTROS mas nome for "Fornecedor"
-          (d.dreGrupo === "OUTROS" && nomeNormalizado.includes("fornecedor"))
+          nomeNormalizado.includes("fornecedor") ||
+          nomeNormalizado.includes("fornecedores")
         );
       })
       .map((d) => d.valor)
   );
 
+  // SERVIÇOS DE TERCEIROS: todas as categorias que contêm "serviço" ou "terceiro" no nome
   const servicosTerceiros = sum(
     despesas
-      .filter(
-        (d) =>
-          d.dreGrupo === "CUSTO_PRODUTO_SERVICO" &&
-          d.dreSubgrupo === "SERVICOS_TERCEIROS"
-      )
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("serviço") ||
+          nomeNormalizado.includes("servico") ||
+          nomeNormalizado.includes("terceiro")
+        );
+      })
       .map((d) => d.valor)
   );
 
-  // FRETES: busca por nome da categoria "Frete" independente do dreGrupo/dreSubgrupo
+  // FRETES: todas as categorias que contêm "frete" no nome
   const fretes = sum(
     despesas
-      .filter(
-        (d) =>
-          normalizeNome(d.categoria) === "frete" ||
-          normalizeNome(d.categoria).includes("frete")
-      )
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return nomeNormalizado.includes("frete");
+      })
       .map((d) => d.valor)
   );
 
@@ -189,56 +185,181 @@ export async function calcularDre({
 
   const lucroBruto = receitaLiquida - custoServicos.total;
 
-  // Despesas Operacionais detalhadas
-  const despesasOperacionaisData = despesas.filter(
-    (d) => d.dreGrupo === "DESPESA_OPERACIONAL"
-  );
+  // Despesas Operacionais: agrupa por nome da categoria
+  // Despesas Fixas e Variáveis: categorias que não se encaixam em outras categorias específicas
+  // (será calculado como o que sobra após subtrair as outras despesas operacionais)
 
-  const despesasFixasVariaveis = sum(
-    despesasOperacionaisData
-      .filter((d) => d.dreSubgrupo === "OUTROS")
-      .map((d) => d.valor)
-  );
-
+  // SALÁRIOS: todas as categorias que contêm "salário", "salario" ou "folha" no nome
   const salarios = sum(
-    despesasOperacionaisData
-      .filter((d) => d.dreSubgrupo === "SALARIOS")
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("salário") ||
+          nomeNormalizado.includes("salario") ||
+          nomeNormalizado.includes("folha")
+        );
+      })
       .map((d) => d.valor)
   );
 
+  // IMPOSTO SOBRE SALÁRIOS: categorias que contêm "imposto" e ("folha" ou "salário")
   const impostoSalarios = sum(
-    despesasOperacionaisData
-      .filter((d) => d.dreSubgrupo === "IMPOSTO_SOBRE_FOLHA")
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          (nomeNormalizado.includes("imposto") &&
+            (nomeNormalizado.includes("folha") ||
+              nomeNormalizado.includes("salário") ||
+              nomeNormalizado.includes("salario"))) ||
+          nomeNormalizado.includes("inss") ||
+          nomeNormalizado.includes("fgts")
+        );
+      })
       .map((d) => d.valor)
   );
 
+  // DESPESAS COM PESSOAL: categorias que contêm "pessoal", "benefício" ou "beneficio"
   const despesasPessoal = sum(
-    despesasOperacionaisData
-      .filter((d) => d.dreSubgrupo === "DESPESAS_PESSOAIS")
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("pessoal") ||
+          nomeNormalizado.includes("benefício") ||
+          nomeNormalizado.includes("beneficio")
+        );
+      })
       .map((d) => d.valor)
   );
 
+  // CONTADOR E OUTROS: categorias que contêm "contador", "programa", "software" ou "sistema"
   const contadorOutros = sum(
-    despesasOperacionaisData
-      .filter((d) => d.dreSubgrupo === "CONTADOR_PROGRAMAS")
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("contador") ||
+          nomeNormalizado.includes("programa") ||
+          nomeNormalizado.includes("software") ||
+          nomeNormalizado.includes("sistema")
+        );
+      })
       .map((d) => d.valor)
   );
 
+  // ÁGUA/LUZ/INTERNET: categorias que contêm essas palavras
   const aguaLuzInternet = sum(
-    despesasOperacionaisData
-      .filter((d) => d.dreSubgrupo === "AGUA_LUZ_INTERNET")
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("água") ||
+          nomeNormalizado.includes("agua") ||
+          nomeNormalizado.includes("luz") ||
+          nomeNormalizado.includes("energia") ||
+          nomeNormalizado.includes("internet") ||
+          nomeNormalizado.includes("telefone") ||
+          nomeNormalizado.includes("telecomunicação") ||
+          nomeNormalizado.includes("telecomunicacao")
+        );
+      })
       .map((d) => d.valor)
   );
 
+  // DESPESAS OFICINA: categorias que contêm "oficina", "manutenção" ou "manutencao"
   const despesasOficina = sum(
-    despesasOperacionaisData
-      .filter((d) => d.dreSubgrupo === "DESP_OFICINA")
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("oficina") ||
+          nomeNormalizado.includes("manutenção") ||
+          nomeNormalizado.includes("manutencao")
+        );
+      })
       .map((d) => d.valor)
   );
 
+  // PRÓ-LABORE: categorias que contêm "pró-labore", "pro-labore", "prolabore" ou "pró labore"
   const proLabore = sum(
-    despesasOperacionaisData
-      .filter((d) => d.dreSubgrupo === "PRO_LABORE")
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("pró-labore") ||
+          nomeNormalizado.includes("pro-labore") ||
+          nomeNormalizado.includes("prolabore") ||
+          nomeNormalizado.includes("pró labore")
+        );
+      })
+      .map((d) => d.valor)
+  );
+
+  // DESPESAS FIXAS E VARIÁVEIS: todas as outras despesas que não se encaixam nas categorias acima
+  // e que não são custos de serviços, impostos sobre receita ou despesas financeiras
+  const despesasFixasVariaveis = sum(
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        // Exclui custos de serviços
+        if (
+          nomeNormalizado.includes("fornecedor") ||
+          nomeNormalizado.includes("serviço") ||
+          nomeNormalizado.includes("servico") ||
+          nomeNormalizado.includes("terceiro") ||
+          nomeNormalizado.includes("frete")
+        ) {
+          return false;
+        }
+        // Exclui impostos sobre receita
+        if (
+          nomeNormalizado.includes("imposto") &&
+          !nomeNormalizado.includes("folha") &&
+          !nomeNormalizado.includes("salário") &&
+          !nomeNormalizado.includes("salario")
+        ) {
+          return false;
+        }
+        // Exclui despesas operacionais específicas já categorizadas
+        if (
+          nomeNormalizado.includes("salário") ||
+          nomeNormalizado.includes("salario") ||
+          nomeNormalizado.includes("folha") ||
+          nomeNormalizado.includes("pessoal") ||
+          nomeNormalizado.includes("benefício") ||
+          nomeNormalizado.includes("beneficio") ||
+          nomeNormalizado.includes("contador") ||
+          nomeNormalizado.includes("programa") ||
+          nomeNormalizado.includes("software") ||
+          nomeNormalizado.includes("sistema") ||
+          nomeNormalizado.includes("água") ||
+          nomeNormalizado.includes("agua") ||
+          nomeNormalizado.includes("luz") ||
+          nomeNormalizado.includes("energia") ||
+          nomeNormalizado.includes("internet") ||
+          nomeNormalizado.includes("telefone") ||
+          nomeNormalizado.includes("oficina") ||
+          nomeNormalizado.includes("manutenção") ||
+          nomeNormalizado.includes("manutencao") ||
+          nomeNormalizado.includes("pró-labore") ||
+          nomeNormalizado.includes("pro-labore") ||
+          nomeNormalizado.includes("prolabore")
+        ) {
+          return false;
+        }
+        // Exclui despesas financeiras
+        if (
+          nomeNormalizado.includes("juros") ||
+          nomeNormalizado.includes("empréstimo") ||
+          nomeNormalizado.includes("emprestimo") ||
+          nomeNormalizado.includes("taxa")
+        ) {
+          return false;
+        }
+        return true;
+      })
       .map((d) => d.valor)
   );
 
@@ -264,29 +385,31 @@ export async function calcularDre({
 
   const resultadoOperacional = lucroBruto - despesasOperacionais.total;
 
-  // Despesas Financeiras
-  const despesasFinanceirasData = despesas.filter(
-    (d) =>
-      d.dreGrupo === "DESPESA_FINANCEIRA" ||
-      // Fallback: se dreGrupo for OUTROS mas nome for "Juros"
-      (d.dreGrupo === "OUTROS" && normalizeNome(d.categoria).includes("juros"))
-  );
-
+  // Despesas Financeiras: agrupa por nome da categoria
+  // EMPRÉSTIMOS: categorias que contêm "empréstimo" ou "emprestimo"
   const emprestimos = sum(
-    despesasFinanceirasData
-      .filter((d) => d.dreSubgrupo === "EMPRESTIMOS")
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("empréstimo") ||
+          nomeNormalizado.includes("emprestimo")
+        );
+      })
       .map((d) => d.valor)
   );
 
+  // JUROS E TAXAS: categorias que contêm "juros" ou "taxa"
   const jurosTaxas = sum(
-    despesasFinanceirasData
-      .filter(
-        (d) =>
-          d.dreSubgrupo === "JUROS_TAXAS" ||
-          // Fallback: se nome da categoria for "Juros" mesmo com OUTROS
-          (d.dreGrupo === "OUTROS" &&
-            normalizeNome(d.categoria).includes("juros"))
-      )
+    despesas
+      .filter((d) => {
+        const nomeNormalizado = normalizeNome(d.categoria);
+        return (
+          nomeNormalizado.includes("juros") ||
+          nomeNormalizado.includes("taxa") ||
+          nomeNormalizado.includes("tarifa")
+        );
+      })
       .map((d) => d.valor)
   );
 
