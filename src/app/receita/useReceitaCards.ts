@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReceitaDadosUI } from "@/lib/types/receitaModal.types";
 import type { ApiListResponse } from "@/lib/types/receitaPage.types";
+import { type StatusUI, uiToApiStatus } from "./utils";
 
 interface UseReceitaCardsProps {
   usuarioId?: number;
   dataInicial?: string;
   dataFinal?: string;
   filtroCategoria: string;
-  filtroStatus: string;
+  filtroStatus: StatusUI;
   filtroTexto: string;
 }
 
@@ -45,7 +46,7 @@ async function fetchReceitasFiltradas(
     const lote = json.data ?? [];
     acumulado.push(...lote);
 
-    if (lote.length < pageSize) break; // acabou
+    if (lote.length < pageSize) break;
     page += 1;
   }
 
@@ -65,19 +66,14 @@ export function useReceitaCards({
   );
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Mapeia status UI para API
-  const uiToApiStatus: Record<string, string> = {
-    Recebido: "pago",
-    Pendente: "pendente",
-    Cancelado: "cancelado",
-  };
-
   // Prepara os parâmetros de filtro
   const filtros = useMemo(() => {
     return {
       categoria: filtroCategoria !== "todas" ? filtroCategoria : undefined,
       status:
-        filtroStatus !== "todos" ? uiToApiStatus[filtroStatus] : undefined,
+        filtroStatus !== "todos"
+          ? uiToApiStatus[filtroStatus as Exclude<StatusUI, "todos">]
+          : undefined,
       texto: filtroTexto.trim() || undefined,
       dataInicial,
       dataFinal,

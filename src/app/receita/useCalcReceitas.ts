@@ -53,7 +53,7 @@ async function fetchAllReceitasMes(
     const lote = json.data ?? [];
     acumulado.push(...lote);
 
-    if (lote.length < pageSize) break; // acabou
+    if (lote.length < pageSize) break;
     page += 1;
   }
 
@@ -85,7 +85,7 @@ async function fetchAllReceitasAno(
     const lote = json.data ?? [];
     acumulado.push(...lote);
 
-    if (lote.length < pageSize) break; // acabou
+    if (lote.length < pageSize) break;
     page += 1;
   }
 
