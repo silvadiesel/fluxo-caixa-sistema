@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DespesaDados } from "@/lib/types/despesaModal.types";
 import type { ApiListResponse } from "@/lib/types/despesaPage.types";
+import { type StatusUI } from "./utils";
 
 interface UseDespesaCardsProps {
   usuarioId?: number;
   dataInicial?: string;
   dataFinal?: string;
   filtroCategoria: string;
-  filtroStatus: string;
+  filtroStatus: StatusUI;
   filtroTexto: string;
 }
 

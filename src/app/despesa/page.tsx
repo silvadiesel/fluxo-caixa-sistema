@@ -1,9 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useAuth } from "@/lib/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,191 +21,48 @@ import {
 import { BarChart3, DollarSign, Search, TrendingDown } from "lucide-react";
 import { ModalDespesa } from "@/components/despesaModal";
 import { ModalDelete } from "@/components/deleteModal";
-import { toast } from "sonner";
-
-import type { DespesaDados } from "@/lib/types/despesaModal.types";
-import type { ApiListResponse, ListMeta } from "@/lib/types/despesaPage.types";
-import { useCalcDespesas } from "./useCalcDespesas";
-import { useDespesaCards } from "./useDespesaCards";
-import { useFilterDate } from "@/lib/hooks/useFilterDate";
-import { useCategorias } from "@/lib/hooks/useCategorias";
-import {
-  getDefaultMonthFilter,
-  formatDateBR,
-  getCurrentYear,
-} from "@/lib/utils/dateUtils";
-
-// -----------------------------------------------------------------------------
-const currencyBR = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  minimumFractionDigits: 2,
-});
-
-const STATUS = ["todos", "pago", "pendente", "cancelado"] as const;
-type StatusUI = (typeof STATUS)[number];
-
-function qs(params: Record<string, string | number | undefined | null>) {
-  const search = new URLSearchParams();
-  for (const [k, v] of Object.entries(params))
-    if (v !== undefined && v !== null && String(v).length)
-      search.set(k, String(v));
-  return search.toString();
-}
-
-function useDebounce<T>(value: T, delay = 350) {
-  const [debounced, setDebounced] = useState<T>(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
+import { formatDateBR } from "@/lib/utils/dateUtils";
+import { currencyBR } from "@/lib/utils/numberUtils";
+import { type StatusUI, STATUS } from "./utils";
+import { useDespesa } from "./useDespesa";
 
 // -----------------------------------------------------------------------------
 export default function DespesaPage() {
-  const { user, isLoading } = useAuth();
-  const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
-  const [filtroStatus, setFiltroStatus] = useState<StatusUI>("todos");
-  const [filtroMes, setFiltroMes] = useState<string>(getDefaultMonthFilter());
-  const [filtroAno, setFiltroAno] = useState<string>(getCurrentYear());
-
-  const { categorias: categoriasList } = useCategorias({
-    natureza: "despesa",
-    usuarioId: user?.id,
-    incluirInativas: false,
-  });
-
-  const [busca, setBusca] = useState<string>("");
-  const debouncedBusca = useDebounce(busca.trim());
-
-  const [page, setPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
-
-  const [itens, setItens] = useState<DespesaDados[]>([]);
-  const [meta, setMeta] = useState<ListMeta>({
-    page: 1,
-    pageSize: 10,
-    total: 0,
-  });
-  const [loading, setLoading] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const { dataInicial, dataFinal, MonthSelectComponent } = useFilterDate(
-    filtroMes,
-    setFiltroMes,
-    filtroAno,
-    setFiltroAno
-  );
-
-  const queryParams = useMemo(() => {
-    return {
-      usuarioId: user?.id,
-      page,
-      pageSize,
-      categoria: filtroCategoria !== "todas" ? filtroCategoria : undefined,
-      status: filtroStatus !== "todos" ? filtroStatus : undefined,
-      texto: debouncedBusca || undefined,
-      dataInicial,
-      dataFinal,
-    } satisfies Record<string, string | number | undefined | null>;
-  }, [
-    user?.id,
-    page,
-    pageSize,
+  const {
+    user,
+    itens,
+    meta,
+    loading,
+    errorMsg,
+    busca,
+    debouncedBusca,
+    categoriasList,
     filtroCategoria,
     filtroStatus,
-    debouncedBusca,
-    dataInicial,
-    dataFinal,
-  ]);
-
-  const carregar = useCallback(async () => {
-    if (!user?.id || isLoading) return;
-
-    setLoading(true);
-    setErrorMsg(null);
-    try {
-      const res = await fetch(`/api/despesaApi?${qs(queryParams)}`, {
-        cache: "no-store",
-      });
-      if (!res.ok)
-        throw new Error(`Falha ao carregar despesas (${res.status})`);
-      const json: ApiListResponse<DespesaDados> = await res.json();
-      setItens(json.data);
-      setMeta(json.meta);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao carregar dados";
-      setErrorMsg(msg);
-      setItens([]);
-      setMeta((m) => ({ ...m, total: 0 }));
-    } finally {
-      setLoading(false);
-    }
-  }, [queryParams, user?.id, isLoading]);
-
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
-
-  const handleSaved = useCallback(() => {
-    setPage(1);
-    carregar();
-  }, [carregar]);
-
-  const { categoriaComMaiorDespesa, totalPages } = useCalcDespesas({
-    meta,
-    dataInicial,
-    dataFinal,
-    usuarioId: user?.id,
-  });
-
-  // Hook para calcular os cards baseado nos filtros
-  const {
-    despesasMes: despesasMesFiltradas,
-    mediaDespesas: mediaDespesasFiltrada,
+    filtroMes,
+    filtroAno,
+    page,
+    pageSize,
+    handleBuscaChange,
+    handleCategoriaChange,
+    handleStatusChange,
+    handlePageSizeChange,
+    handlePreviousPage,
+    handleNextPage,
+    handleSaved,
+    handleDelete,
+    MonthSelectComponent,
+    setFiltroMes,
+    setFiltroAno,
+    setPage,
+    categoriaComMaiorDespesa,
+    totalPages,
+    despesasMesFiltradas,
+    mediaDespesasFiltrada,
     labelDespesas,
     labelMedia,
     temFiltro,
-  } = useDespesaCards({
-    usuarioId: user?.id,
-    dataInicial,
-    dataFinal,
-    filtroCategoria,
-    filtroStatus,
-    filtroTexto: debouncedBusca,
-  });
-
-  const handleDelete = useCallback(
-    async (id?: number) => {
-      if (!id) return;
-      try {
-        const res = await fetch(`/api/despesaApi/${id}`, { method: "DELETE" });
-        if (!res.ok) throw new Error("Não foi possível excluir.");
-
-        setItens((prev) => prev.filter((x) => x.id !== id));
-        setMeta((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
-
-        setTimeout(() => {
-          setItens((curr) => {
-            if (curr.length === 0 && page > 1)
-              setPage((p) => Math.max(1, p - 1));
-            else carregar();
-            return curr;
-          });
-        }, 0);
-
-        toast.success("Despesa excluída com sucesso!", {
-          description: "A despesa foi removida do sistema.",
-        });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Erro ao excluir.";
-        toast.error("Erro ao excluir despesa", { description: message });
-      }
-    },
-    [carregar, page]
-  );
+  } = useDespesa();
 
   return (
     <ProtectedRoute>
@@ -296,10 +150,7 @@ export default function DespesaPage() {
                   <Input
                     placeholder="Buscar por despesas..."
                     value={busca}
-                    onChange={(e) => {
-                      setPage(1);
-                      setBusca(e.target.value);
-                    }}
+                    onChange={(e) => handleBuscaChange(e.target.value)}
                     className="pl-10"
                   />
                 </div>
@@ -307,10 +158,7 @@ export default function DespesaPage() {
 
               <Select
                 value={filtroCategoria}
-                onValueChange={(value) => {
-                  setPage(1);
-                  setFiltroCategoria(value);
-                }}
+                onValueChange={handleCategoriaChange}
               >
                 <SelectTrigger className="w-full md:w-48">
                   <SelectValue placeholder="Categoria" />
@@ -327,10 +175,7 @@ export default function DespesaPage() {
 
               <Select
                 value={filtroStatus}
-                onValueChange={(value: StatusUI) => {
-                  setPage(1);
-                  setFiltroStatus(value);
-                }}
+                onValueChange={(value: StatusUI) => handleStatusChange(value)}
               >
                 <SelectTrigger className="w-full md:w-48">
                   <SelectValue placeholder="Status" />
@@ -346,10 +191,7 @@ export default function DespesaPage() {
 
               <Select
                 value={String(pageSize)}
-                onValueChange={(value) => {
-                  setPage(1);
-                  setPageSize(Number(value));
-                }}
+                onValueChange={handlePageSizeChange}
               >
                 <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="Itens por página" />
@@ -472,14 +314,14 @@ export default function DespesaPage() {
                 <Button
                   variant="outline"
                   disabled={loading || page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={handlePreviousPage}
                 >
                   Anterior
                 </Button>
                 <Button
                   variant="outline"
                   disabled={loading || page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={handleNextPage}
                 >
                   Próxima
                 </Button>
