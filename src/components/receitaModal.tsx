@@ -60,7 +60,9 @@ export function ModalReceita({
     descricao: receita?.descricao ?? "",
     categoria: receita?.categoria ?? "",
     valor: receita ? String(receita.valor) : "",
-    data: new Date(receita?.data ?? new Date()),
+    data: receita?.data
+      ? dayjs(receita.data).startOf("day").toDate()
+      : new Date(),
     status: (receita?.status ?? "Pendente") as UiStatus,
     observacoes: receita?.observacoes ?? "",
   });
@@ -363,6 +365,7 @@ export function ModalReceita({
                     <Calendar
                       mode="single"
                       selected={formData.data}
+                      defaultMonth={formData.data}
                       onSelect={(date) =>
                         date && setFormData({ ...formData, data: date })
                       }

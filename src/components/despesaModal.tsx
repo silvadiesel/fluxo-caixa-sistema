@@ -62,7 +62,7 @@ export function ModalDespesa({
     descricao: despesa?.descricao ?? "",
     categoria: despesa?.categoria ?? "",
     valor: despesa ? String(despesa.valor) : "",
-    data: new Date(despesa?.data ?? new Date()),
+    data: despesa?.data ? dayjs(despesa.data).startOf("day").toDate() : new Date(),
     status: (despesa?.status ?? "pendente") as status,
     observacoes: despesa?.observacoes ?? "",
   });
@@ -352,6 +352,7 @@ export function ModalDespesa({
                     <Calendar
                       mode="single"
                       selected={formData.data}
+                      defaultMonth={formData.data}
                       onSelect={(date) =>
                         date && setFormData({ ...formData, data: date })
                       }
