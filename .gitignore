@@ -12,6 +12,7 @@
 bun.lock
 bun.lockb
 drizzle
+package-lock.json
 # testing
 /coverage
 
