@@ -11,7 +11,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, TableConfig, Trash2, Power } from "lucide-react";
+import {
+  Shield,
+  TableConfig,
+  Trash2,
+  Power,
+  Pencil,
+  Check,
+  X,
+} from "lucide-react";
 import { ModalDelete } from "@/components/deleteModal";
 import { useCategoriaSection } from "./useCategoriaSection";
 import { useConfig } from "./useConfig";
@@ -33,6 +41,12 @@ function CategoriaSection({
     handleAdicionar,
     handleToggleAtivo,
     handleDeletar,
+    editandoId,
+    nomeEditando,
+    setNomeEditando,
+    handleIniciarEdicao,
+    handleCancelarEdicao,
+    handleSalvarEdicao,
   } = useCategoriaSection(natureza);
 
   return (
@@ -93,47 +107,96 @@ function CategoriaSection({
                   key={categoria.id}
                   className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">{categoria.nome}</span>
-                    <Badge
-                      variant={categoria.ativo ? "default" : "secondary"}
-                      className="text-xs"
-                    >
-                      {categoria.ativo ? "Ativa" : "Inativa"}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleAtivo(categoria)}
-                      disabled={processandoId === categoria.id}
-                      className={
-                        categoria.ativo
-                          ? "text-orange-600 hover:text-orange-700"
-                          : "text-green-600 hover:text-green-700"
-                      }
-                    >
-                      <Power className="h-4 w-4 mr-1" />
-                      {categoria.ativo ? "Desativar" : "Reativar"}
-                    </Button>
-                    <ModalDelete
-                      itemName={categoria.nome}
-                      itemType="categoria"
-                      onConfirm={() => handleDeletar(categoria)}
-                      trigger={
+                  {editandoId === categoria.id ? (
+                    <>
+                      <Input
+                        className="h-8 w-48"
+                        value={nomeEditando}
+                        onChange={(e) => setNomeEditando(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSalvarEdicao(categoria);
+                          if (e.key === "Escape") handleCancelarEdicao();
+                        }}
+                        autoFocus
+                        disabled={processandoId === categoria.id}
+                      />
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => handleSalvarEdicao(categoria)}
                           disabled={processandoId === categoria.id}
-                          className="text-destructive hover:text-destructive"
+                          className="text-green-700 hover:text-green-800"
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Apagar
+                          <Check className="h-4 w-4 mr-1" />
+                          Salvar
                         </Button>
-                      }
-                    />
-                  </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCancelarEdicao}
+                          disabled={processandoId === categoria.id}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium">{categoria.nome}</span>
+                        <Badge
+                          variant={categoria.ativo ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {categoria.ativo ? "Ativa" : "Inativa"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleIniciarEdicao(categoria)}
+                          disabled={processandoId === categoria.id}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleAtivo(categoria)}
+                          disabled={processandoId === categoria.id}
+                          className={
+                            categoria.ativo
+                              ? "text-orange-600 hover:text-orange-700"
+                              : "text-green-600 hover:text-green-700"
+                          }
+                        >
+                          <Power className="h-4 w-4 mr-1" />
+                          {categoria.ativo ? "Desativar" : "Reativar"}
+                        </Button>
+                        <ModalDelete
+                          itemName={categoria.nome}
+                          itemType="categoria"
+                          onConfirm={() => handleDeletar(categoria)}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={processandoId === categoria.id}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Apagar
+                            </Button>
+                          }
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>

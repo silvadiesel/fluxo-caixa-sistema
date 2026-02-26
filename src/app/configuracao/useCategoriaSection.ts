@@ -15,6 +15,8 @@ export function useCategoriaSection(natureza: "despesa" | "receita") {
   const [nomeCategoria, setNomeCategoria] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [processandoId, setProcessandoId] = useState<number | null>(null);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [nomeEditando, setNomeEditando] = useState("");
 
   const handleAdicionar = useCallback(async () => {
     if (!user?.id) {
@@ -117,6 +119,62 @@ export function useCategoriaSection(natureza: "despesa" | "receita") {
     [user?.id, refetch]
   );
 
+  const handleIniciarEdicao = useCallback((categoria: Categoria) => {
+    setEditandoId(categoria.id);
+    setNomeEditando(categoria.nome);
+  }, []);
+
+  const handleCancelarEdicao = useCallback(() => {
+    setEditandoId(null);
+    setNomeEditando("");
+  }, []);
+
+  const handleSalvarEdicao = useCallback(
+    async (categoria: Categoria) => {
+      const nomeNormalizado = normalizeCategoriaNome(nomeEditando);
+      if (!nomeNormalizado) {
+        toast.error("Nome da categoria não pode estar vazio");
+        return;
+      }
+
+      if (nomeNormalizado === categoria.nome) {
+        setEditandoId(null);
+        setNomeEditando("");
+        return;
+      }
+
+      setProcessandoId(categoria.id);
+      try {
+        const response = await fetch(`/api/categoriaApi/${categoria.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome: nomeNormalizado }),
+        });
+
+        if (response.ok) {
+          toast.success("Categoria renomeada com sucesso!");
+          setEditandoId(null);
+          setNomeEditando("");
+          refetch();
+        } else {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const data = await response.json();
+            toast.error(data.error || "Erro ao renomear categoria");
+          } else {
+            toast.error(`Erro ao renomear categoria (${response.status})`);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao renomear categoria:", error);
+        toast.error("Erro interno do servidor");
+      } finally {
+        setProcessandoId(null);
+      }
+    },
+    [nomeEditando, refetch]
+  );
+
   const handleDeletar = useCallback(
     async (categoria: Categoria) => {
       if (!user?.id) {
@@ -173,5 +231,11 @@ export function useCategoriaSection(natureza: "despesa" | "receita") {
     handleAdicionar,
     handleToggleAtivo,
     handleDeletar,
+    editandoId,
+    nomeEditando,
+    setNomeEditando,
+    handleIniciarEdicao,
+    handleCancelarEdicao,
+    handleSalvarEdicao,
   };
 }

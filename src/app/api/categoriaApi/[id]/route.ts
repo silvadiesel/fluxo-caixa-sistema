@@ -78,6 +78,29 @@ export async function PATCH(
       return notFound();
     }
 
+    // Propagar novo nome para despesas e receitas existentes
+    if (updateData.nome) {
+      await db
+        .update(despesa)
+        .set({ categoria: updateData.nome })
+        .where(
+          and(
+            eq(despesa.usuarioId, existing.usuarioId),
+            eq(despesa.categoria, existing.nome)
+          )
+        );
+
+      await db
+        .update(receita)
+        .set({ categoria: updateData.nome })
+        .where(
+          and(
+            eq(receita.usuarioId, existing.usuarioId),
+            eq(receita.categoria, existing.nome)
+          )
+        );
+    }
+
     return ok(updated);
   } catch (err) {
     console.error("Erro ao atualizar categoria:", err);
