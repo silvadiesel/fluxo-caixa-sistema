@@ -253,7 +253,32 @@ export async function calcularDre({
     )
   );
 
-  // Despesas não mapeadas: agrupadas por categoria
+  // EMPRÉSTIMOS
+  const emprestimos = sum(
+    filterAndMark((d) => {
+      const nomeNormalizado = normalizeNome(d.categoria);
+      return (
+        isSubgrupo(d, "EMPRESTIMOS") ||
+        nomeNormalizado.includes("empréstimo") ||
+        nomeNormalizado.includes("emprestimo")
+      );
+    }).map((d) => d.valor)
+  );
+
+  // JUROS E TAXAS
+  const jurosTaxas = sum(
+    filterAndMark((d) => {
+      const nomeNormalizado = normalizeNome(d.categoria);
+      return (
+        isSubgrupo(d, "JUROS_TAXAS") ||
+        nomeNormalizado.includes("juros") ||
+        nomeNormalizado.includes("taxa") ||
+        nomeNormalizado.includes("tarifa")
+      );
+    }).map((d) => d.valor)
+  );
+
+  // Despesas não mapeadas: agrupadas por categoria (calculado após todas as categorias conhecidas)
   const outrosMap = new Map<string, number>();
   for (const d of despesas.filter((d) => !usedIds.has(d.id))) {
     const cat = d.categoria ?? "Sem categoria";
@@ -290,31 +315,6 @@ export async function calcularDre({
   };
 
   const resultadoOperacional = lucroBruto - despesasOperacionais.total;
-
-  // EMPRÉSTIMOS
-  const emprestimos = sum(
-    filterAndMark((d) => {
-      const nomeNormalizado = normalizeNome(d.categoria);
-      return (
-        isSubgrupo(d, "EMPRESTIMOS") ||
-        nomeNormalizado.includes("empréstimo") ||
-        nomeNormalizado.includes("emprestimo")
-      );
-    }).map((d) => d.valor)
-  );
-
-  // JUROS E TAXAS
-  const jurosTaxas = sum(
-    filterAndMark((d) => {
-      const nomeNormalizado = normalizeNome(d.categoria);
-      return (
-        isSubgrupo(d, "JUROS_TAXAS") ||
-        nomeNormalizado.includes("juros") ||
-        nomeNormalizado.includes("taxa") ||
-        nomeNormalizado.includes("tarifa")
-      );
-    }).map((d) => d.valor)
-  );
 
   const despesasFinanceiras = {
     emprestimos: emprestimos ?? 0,
