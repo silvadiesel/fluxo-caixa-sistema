@@ -27,6 +27,7 @@ export interface DreResultado {
     despesasOficina: number;
     despesasPessoais: number;
     proLabore: number;
+    outros: { categoria: string; total: number }[];
     total: number;
   };
   resultadoOperacional: number;
@@ -76,6 +77,7 @@ export async function calcularDre({
 
   const despesas = await db
     .select({
+      id: despesa.id,
       valor: despesa.valor,
       categoria: despesa.categoria,
       descricao: despesa.descricao,
@@ -103,18 +105,41 @@ export async function calcularDre({
   const sum = (nums: (number | null | undefined)[]): number =>
     nums.reduce<number>((acc, n) => acc + (n ?? 0), 0);
 
-  // Função auxiliar para normalizar nome da categoria (case-insensitive)
   const normalizeNome = (nome: string | null | undefined) =>
     nome?.toLowerCase().trim() || "";
 
-  // Receita Bruta: TODAS as receitas pagas
   const receitaBruta = sum(receitas.map((r) => r.valor));
 
-  // Deduções: Imposto - apenas despesas marcadas como "Impostos"
+  const isCategoria = (
+    valorCategoria: string | null | undefined,
+    alvo: string
+  ) => normalizeNome(valorCategoria) === normalizeNome(alvo);
+
+  const isSubgrupo = (
+    d: { dreSubgrupo: string | null | undefined },
+    subgrupo: string
+  ) => d.dreSubgrupo === subgrupo;
+
+  const usedIds = new Set<number>();
+
+  const filterAndMark = (
+    predicate: (d: (typeof despesas)[number]) => boolean
+  ) =>
+    despesas.filter((d) => {
+      if (predicate(d)) {
+        usedIds.add(d.id);
+        return true;
+      }
+      return false;
+    });
+
+  // Deduções: Imposto
   const deducoesImposto = sum(
-    despesas
-      .filter((d) => normalizeNome(d.categoria) === "impostos")
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        d.dreGrupo === "IMPOSTO_SOBRE_RECEITA" ||
+        normalizeNome(d.categoria) === "impostos"
+    ).map((d) => d.valor)
   );
 
   const deducoes = {
@@ -123,30 +148,27 @@ export async function calcularDre({
 
   const receitaLiquida = receitaBruta - deducoes.imposto;
 
-  const isCategoria = (
-    valorCategoria: string | null | undefined,
-    alvo: string
-  ) => normalizeNome(valorCategoria) === normalizeNome(alvo);
-
-  // FORNECEDORES: todas as despesas marcadas com categoria "Fornecedores"
+  // FORNECEDORES
   const fornecedores = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Fornecedores"))
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        isSubgrupo(d, "FORNECEDORES") ||
+        isCategoria(d.categoria, "Fornecedores")
+    ).map((d) => d.valor)
   );
 
-  // SERVIÇOS DE TERCEIROS: todas as categorias que contêm "serviço" ou "terceiro" no nome
+  // SERVIÇOS DE TERCEIROS
   const servicosTerceiros = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Serviço De Terceiro"))
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        isSubgrupo(d, "SERVICOS_TERCEIROS") ||
+        isCategoria(d.categoria, "Serviço De Terceiro")
+    ).map((d) => d.valor)
   );
 
-  // FRETES: todas as categorias que contêm "frete" no nome
+  // FRETES
   const fretes = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Frete"))
-      .map((d) => d.valor)
+    filterAndMark((d) => isCategoria(d.categoria, "Frete")).map((d) => d.valor)
   );
 
   const custoServicos = {
@@ -158,69 +180,90 @@ export async function calcularDre({
 
   const lucroBruto = receitaLiquida - custoServicos.total;
 
-  // SALÁRIOS: todas as categorias que contêm "salário", "salario" ou "folha" no nome
+  // SALÁRIOS
   const salarios = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Salário"))
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) => isSubgrupo(d, "SALARIOS") || isCategoria(d.categoria, "Salário")
+    ).map((d) => d.valor)
   );
 
-  // IMPOSTO SEM SALÁRIOS: categorias que contêm "imposto" e não são "salário"
+  // IMPOSTO SOBRE FOLHA / SALÁRIOS
   const impostoSalarios = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Imposto Sem Salário"))
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        isSubgrupo(d, "IMPOSTO_SOBRE_FOLHA") ||
+        isCategoria(d.categoria, "Imposto Sem Salário")
+    ).map((d) => d.valor)
   );
 
-  // DESPESAS COM PESSOAL: categorias que contêm "pessoal", "benefício" ou "beneficio"
+  // DESPESAS COM PESSOAL
   const despesasPessoal = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Despesa Com Pessoal"))
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        isSubgrupo(d, "DESPESAS_PESSOAIS") ||
+        isCategoria(d.categoria, "Despesa Com Pessoal")
+    ).map((d) => d.valor)
   );
 
-  // CONTADOR E OUTROS: categorias que contêm "contador", "programa", "software" ou "sistema"
+  // CONTADOR E OUTROS
   const contadorOutros = sum(
-    despesas
-      .filter(
-        (d) =>
-          isCategoria(d.categoria, "Contador") ||
-          isCategoria(d.categoria, "Outros")
-      )
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        isSubgrupo(d, "CONTADOR_PROGRAMAS") ||
+        isCategoria(d.categoria, "Contador") ||
+        isCategoria(d.categoria, "Outros")
+    ).map((d) => d.valor)
   );
 
-  // ÁGUA e LUZ - comparação exata (case-sensitive) para evitar duplicatas
+  // ÁGUA E LUZ
   const aguaLuz = sum(
-    despesas
-      .filter((d) => d.categoria === "Despesa Água/luz")
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        isSubgrupo(d, "AGUA_LUZ_INTERNET") ||
+        d.categoria === "Despesa Água/luz"
+    ).map((d) => d.valor)
   );
+
   const internetTelefone = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Despesa Internet/telefone"))
-      .map((d) => d.valor)
+    filterAndMark((d) =>
+      isCategoria(d.categoria, "Despesa Internet/telefone")
+    ).map((d) => d.valor)
   );
 
-  // DESPESAS OFICINA: categorias que contêm "oficina", "manutenção" ou "manutencao"
+  // DESPESAS OFICINA
   const despesasOficina = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Despesa Oficina"))
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        isSubgrupo(d, "DESP_OFICINA") ||
+        isCategoria(d.categoria, "Despesa Oficina")
+    ).map((d) => d.valor)
   );
 
-  // PRÓ-LABORE: categorias que contêm "pró-labore", "pro-labore", "prolabore" ou "pró labore"
+  // PRÓ-LABORE
   const proLabore = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Pro-labore"))
-      .map((d) => d.valor)
+    filterAndMark(
+      (d) =>
+        isSubgrupo(d, "PRO_LABORE") || isCategoria(d.categoria, "Pro-labore")
+    ).map((d) => d.valor)
   );
 
   const despesasPessoais = sum(
-    despesas
-      .filter((d) => isCategoria(d.categoria, "Despesa Pessoal"))
-      .map((d) => d.valor)
+    filterAndMark((d) => isCategoria(d.categoria, "Despesa Pessoal")).map(
+      (d) => d.valor
+    )
   );
+
+  // Despesas não mapeadas: agrupadas por categoria
+  const outrosMap = new Map<string, number>();
+  for (const d of despesas.filter((d) => !usedIds.has(d.id))) {
+    const cat = d.categoria ?? "Sem categoria";
+    outrosMap.set(cat, (outrosMap.get(cat) ?? 0) + (d.valor ?? 0));
+  }
+  const outros = Array.from(outrosMap.entries()).map(([categoria, total]) => ({
+    categoria,
+    total,
+  }));
+  const outrosTotal = sum(outros.map((o) => o.total));
 
   const despesasOperacionais = {
     salarios: salarios ?? 0,
@@ -232,6 +275,7 @@ export async function calcularDre({
     despesasOficina: despesasOficina ?? 0,
     despesasPessoais: despesasPessoais ?? 0,
     proLabore: proLabore ?? 0,
+    outros,
     total:
       (salarios ?? 0) +
       (impostoSalarios ?? 0) +
@@ -241,37 +285,35 @@ export async function calcularDre({
       (despesasOficina ?? 0) +
       (internetTelefone ?? 0) +
       (despesasPessoais ?? 0) +
-      (proLabore ?? 0),
+      (proLabore ?? 0) +
+      outrosTotal,
   };
 
   const resultadoOperacional = lucroBruto - despesasOperacionais.total;
 
-  // Despesas Financeiras: agrupa por nome da categoria
-  // EMPRÉSTIMOS: categorias que contêm "empréstimo" ou "emprestimo"
+  // EMPRÉSTIMOS
   const emprestimos = sum(
-    despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("empréstimo") ||
-          nomeNormalizado.includes("emprestimo")
-        );
-      })
-      .map((d) => d.valor)
+    filterAndMark((d) => {
+      const nomeNormalizado = normalizeNome(d.categoria);
+      return (
+        isSubgrupo(d, "EMPRESTIMOS") ||
+        nomeNormalizado.includes("empréstimo") ||
+        nomeNormalizado.includes("emprestimo")
+      );
+    }).map((d) => d.valor)
   );
 
-  // JUROS E TAXAS: categorias que contêm "juros" ou "taxa"
+  // JUROS E TAXAS
   const jurosTaxas = sum(
-    despesas
-      .filter((d) => {
-        const nomeNormalizado = normalizeNome(d.categoria);
-        return (
-          nomeNormalizado.includes("juros") ||
-          nomeNormalizado.includes("taxa") ||
-          nomeNormalizado.includes("tarifa")
-        );
-      })
-      .map((d) => d.valor)
+    filterAndMark((d) => {
+      const nomeNormalizado = normalizeNome(d.categoria);
+      return (
+        isSubgrupo(d, "JUROS_TAXAS") ||
+        nomeNormalizado.includes("juros") ||
+        nomeNormalizado.includes("taxa") ||
+        nomeNormalizado.includes("tarifa")
+      );
+    }).map((d) => d.valor)
   );
 
   const despesasFinanceiras = {

@@ -398,6 +398,22 @@ export default function RelatorioPage() {
                           )}
                         </span>
                       </div>
+                      {dadosDRE.despesasOperacionais.outros.map((item) => (
+                        <div
+                          key={item.categoria}
+                          className="flex justify-between items-center py-1"
+                        >
+                          <span className="text-muted-foreground text-sm">
+                            (-) {item.categoria}
+                          </span>
+                          <span className="text-red-600 text-sm">
+                            R{"$ "}
+                            {item.total.toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      ))}
                     </div>
 
                     <div className="flex justify-between items-center py-2 border-b font-medium bg-purple-50 px-2 rounded">

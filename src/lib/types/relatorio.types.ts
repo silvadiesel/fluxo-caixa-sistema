@@ -29,6 +29,7 @@ export interface DREDetalhado {
     despesasOficina: number;
     despesasPessoais: number;
     proLabore: number;
+    outros: { categoria: string; total: number }[];
     total: number;
   };
   resultadoOperacional: number;

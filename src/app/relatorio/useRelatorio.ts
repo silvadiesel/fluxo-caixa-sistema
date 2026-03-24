@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useRelatorio as useRelatorioHook } from "@/lib/hooks/useRelatorio";
 import { gerarPDFRelatorio } from "@/components/createPDF";
 import { toast } from "sonner";
+import type { DREDetalhado } from "@/lib/types/relatorio.types";
 
 export function useRelatorio() {
   const { user } = useAuth();
@@ -48,9 +49,9 @@ export function useRelatorio() {
     setModalOpen(false);
   };
 
-  const dadosDRE = useMemo(() => {
+  const dadosDRE = useMemo((): DREDetalhado => {
     return (
-      dados?.dre || {
+      dados?.dre ?? {
         receitaBruta: 0,
         deducoes: {
           imposto: 0,
@@ -73,6 +74,7 @@ export function useRelatorio() {
           despesasOficina: 0,
           despesasPessoais: 0,
           proLabore: 0,
+          outros: [],
           total: 0,
         },
         resultadoOperacional: 0,
