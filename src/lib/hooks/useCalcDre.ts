@@ -198,10 +198,8 @@ export async function calcularDre({
 
   // DESPESAS COM PESSOAL
   const despesasPessoal = sum(
-    filterAndMark(
-      (d) =>
-        isSubgrupo(d, "DESPESAS_PESSOAIS") ||
-        isCategoria(d.categoria, "Despesa Com Pessoal")
+    filterAndMark((d) =>
+      isCategoria(d.categoria, "Despesa Com Pessoal")
     ).map((d) => d.valor)
   );
 
@@ -216,13 +214,22 @@ export async function calcularDre({
   );
 
   // ÁGUA E LUZ
-  const aguaLuz = sum(
-    filterAndMark(
-      (d) =>
-        isSubgrupo(d, "AGUA_LUZ_INTERNET") ||
-        d.categoria === "Despesa Água/luz"
-    ).map((d) => d.valor)
+  const aguaLuzItems = filterAndMark(
+    (d) => d.categoria === "Despesa Água/luz"
   );
+
+  console.log(
+    `[DRE] Contas em "Despesa Água/luz" (${dataInicial} → ${dataFinal}):`,
+    aguaLuzItems.map((d) => ({
+      id: d.id,
+      categoria: d.categoria,
+      descricao: d.descricao,
+      valor: d.valor,
+      dreSubgrupo: d.dreSubgrupo,
+    }))
+  );
+
+  const aguaLuz = sum(aguaLuzItems.map((d) => d.valor));
 
   const internetTelefone = sum(
     filterAndMark((d) =>
