@@ -267,6 +267,14 @@ function RelatorioPDF({ dados }: RelatorioPDFProps) {
                 {formatCurrency(dre.despesasOperacionais.proLabore)}
               </Text>
             </View>
+            {dre.despesasOperacionais.outros.map((item) => (
+              <View style={styles.row} key={item.categoria}>
+                <Text style={styles.rowLabel}>(-) {item.categoria}</Text>
+                <Text style={styles.rowValueNegative}>
+                  {formatCurrency(item.total)}
+                </Text>
+              </View>
+            ))}
           </View>
 
           <View style={[styles.highlightRow, styles.row]}>
