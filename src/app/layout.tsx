@@ -44,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <html lang="pt-BR" suppressHydrationWarning>
             <head>
                 <meta name="description" content="Controle financeiro simples e eficiente" />
+                <meta name="theme-color" content="#ffffff" />
             </head>
             <body className={inter.className}>
                 <AuthProvider>
