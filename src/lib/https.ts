@@ -4,6 +4,9 @@ import { ZodSchema } from "zod";
 export function badRequest(message: string, issues?: unknown) {
     return NextResponse.json({ error: message, issues }, { status: 400 });
 }
+export function unauthorized() {
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+}
 export function notFound() {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 }

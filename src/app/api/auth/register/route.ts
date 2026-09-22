@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/connection";
 import { user } from "@/db/schema/user";
 import { eq } from "drizzle-orm";
-import CryptoJS from "crypto-js";
+import { hashPassword } from "@/lib/auth/password";
+import { createSession } from "@/lib/auth/session";
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,22 +16,29 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        if (String(senha).length < 6) {
+            return NextResponse.json(
+                { error: "A senha deve ter pelo menos 6 caracteres" },
+                { status: 400 }
+            );
+        }
+
         const existingUser = await db.select().from(user).where(eq(user.email, email)).limit(1);
 
         if (existingUser.length > 0) {
             return NextResponse.json({ error: "Email já está em uso" }, { status: 409 });
         }
 
-        const senhaCriptografada = CryptoJS.SHA256(senha).toString();
-
         const newUser = await db
             .insert(user)
             .values({
                 nome,
                 email,
-                senha: senhaCriptografada,
+                senha: await hashPassword(senha),
             })
             .returning();
+
+        await createSession(newUser[0].id);
 
         return NextResponse.json(
             {

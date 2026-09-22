@@ -3,6 +3,7 @@ import { db } from "@/db/connection";
 import { despesa } from "@/db/schema/despesa";
 import { and, count, desc, eq, gte, like, lte, SQL } from "drizzle-orm";
 import { ok, readJson, readQuery } from "@/lib/https";
+import { requireUser } from "@/lib/auth/guard";
 import {
   createDespesaSchema,
   DespesaSelect,
@@ -10,11 +11,14 @@ import {
 } from "@/lib/validator/despesaValidator";
 
 export async function GET(req: NextRequest) {
+  const { userId, error: authError } = await requireUser();
+  if (authError) return authError;
+
   const { data: q, error } = readQuery(req, listDespesasQuerySchema);
   if (error || !q) return error!;
 
-  const where: SQL[] = [];
-  if (q.usuarioId !== undefined) where.push(eq(despesa.usuarioId, q.usuarioId));
+  // O usuarioId vem sempre da sessão; o que o cliente enviar é ignorado.
+  const where: SQL[] = [eq(despesa.usuarioId, userId)];
   if (q.categoria) where.push(eq(despesa.categoria, q.categoria));
   if (q.status) where.push(eq(despesa.status, q.status));
   if (q.texto) where.push(like(despesa.descricao, `%${q.texto}%`));
@@ -43,6 +47,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { userId, error: authError } = await requireUser();
+  if (authError) return authError;
+
   const { data, error } = await readJson(req, createDespesaSchema);
   if (error || !data) return error!;
 
@@ -50,6 +57,7 @@ export async function POST(req: NextRequest) {
     .insert(despesa)
     .values({
       ...data,
+      usuarioId: userId,
       valor: Number(data.valor),
       observacoes: data.observacoes ?? null,
     })

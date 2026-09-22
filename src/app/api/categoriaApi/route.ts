@@ -3,6 +3,7 @@ import { db } from "@/db/connection";
 import { categorias } from "@/db/schema/categorias";
 import { and, eq, SQL } from "drizzle-orm";
 import { badRequest, ok, readJson, readQuery } from "@/lib/https";
+import { requireUser } from "@/lib/auth/guard";
 import {
   createCategoriaSchema,
   listCategoriasQuerySchema,
@@ -10,11 +11,14 @@ import {
 import { normalizeCategoriaNome } from "@/lib/utils/normalizeCategoria";
 
 export async function GET(req: NextRequest) {
+  const { userId, error: authError } = await requireUser();
+  if (authError) return authError;
+
   const { data: q, error } = readQuery(req, listCategoriasQuerySchema);
   if (error || !q) return error!;
 
-  const where: SQL[] = [];
-  where.push(eq(categorias.usuarioId, q.usuarioId));
+  // O usuarioId vem sempre da sessão; o que o cliente enviar é ignorado.
+  const where: SQL[] = [eq(categorias.usuarioId, userId)];
 
   if (q.natureza) {
     where.push(eq(categorias.natureza, q.natureza));
@@ -36,6 +40,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { userId, error: authError } = await requireUser();
+  if (authError) return authError;
+
   const { data, error } = await readJson(req, createCategoriaSchema);
   if (error || !data) return error!;
 
@@ -53,7 +60,7 @@ export async function POST(req: NextRequest) {
       .from(categorias)
       .where(
         and(
-          eq(categorias.usuarioId, data.usuarioId),
+          eq(categorias.usuarioId, userId),
           eq(categorias.natureza, data.natureza),
           eq(categorias.nome, nomeNormalizado)
         )
@@ -67,7 +74,7 @@ export async function POST(req: NextRequest) {
     const [row] = await db
       .insert(categorias)
       .values({
-        usuarioId: data.usuarioId,
+        usuarioId: userId,
         natureza: data.natureza,
         nome: nomeNormalizado,
         ativo: true,

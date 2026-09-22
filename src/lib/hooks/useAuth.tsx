@@ -24,28 +24,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Verificar se há dados de autenticação no localStorage
+        // A sessão real é o cookie httpOnly; o localStorage guarda apenas o
+        // perfil para a UI não piscar. Quem manda é a resposta de /api/auth/me.
         const storedUser = localStorage.getItem("user");
-        const storedAuth = localStorage.getItem("isAuthenticated");
-
-        if (storedUser && storedAuth === "true") {
+        if (storedUser) {
             try {
                 setUser(JSON.parse(storedUser));
                 setIsAuthenticated(true);
-            } catch (error) {
-                console.error("Erro ao parsear dados do usuário:", error);
+            } catch {
                 localStorage.removeItem("user");
-                localStorage.removeItem("isAuthenticated");
             }
         }
-        setIsLoading(false);
+
+        let ativo = true;
+
+        (async () => {
+            try {
+                const response = await fetch("/api/auth/me");
+
+                if (!ativo) return;
+
+                if (response.ok) {
+                    const { user: sessionUser } = await response.json();
+                    setUser(sessionUser);
+                    setIsAuthenticated(true);
+                    localStorage.setItem("user", JSON.stringify(sessionUser));
+                } else {
+                    setUser(null);
+                    setIsAuthenticated(false);
+                    localStorage.removeItem("user");
+                    localStorage.removeItem("isAuthenticated");
+                }
+            } catch {
+                // Falha de rede: mantém o estado otimista do localStorage.
+            } finally {
+                if (ativo) setIsLoading(false);
+            }
+        })();
+
+        return () => {
+            ativo = false;
+        };
     }, []);
 
     const login = (userData: User) => {
         setUser(userData);
         setIsAuthenticated(true);
         localStorage.setItem("user", JSON.stringify(userData));
-        localStorage.setItem("isAuthenticated", "true");
     };
 
     const logout = () => {
@@ -53,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(false);
         localStorage.removeItem("user");
         localStorage.removeItem("isAuthenticated");
+        void fetch("/api/auth/logout", { method: "POST" });
     };
 
     return (
