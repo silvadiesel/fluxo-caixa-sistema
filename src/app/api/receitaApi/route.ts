@@ -7,13 +7,17 @@ import {
   listReceitasQuerySchema,
 } from "@/lib/validator/receitaValidator";
 import { readJson, readQuery, ok } from "@/lib/https";
+import { requireUser } from "@/lib/auth/guard";
 import { renderReceitas } from "@/lib/adapters/receita.adapter";
 export async function GET(req: NextRequest) {
+  const { userId, error: authError } = await requireUser();
+  if (authError) return authError;
+
   const { data: q, error } = readQuery(req, listReceitasQuerySchema);
   if (error || !q) return error!;
 
-  const where: SQL[] = [];
-  if (q.usuarioId !== undefined) where.push(eq(receita.usuarioId, q.usuarioId));
+  // O usuarioId vem sempre da sessão; o que o cliente enviar é ignorado.
+  const where: SQL[] = [eq(receita.usuarioId, userId)];
   if (q.categoria) where.push(like(receita.categoria, `%${q.categoria}%`));
   if (q.status) where.push(eq(receita.status, q.status));
   if (q.texto) where.push(like(receita.descricao, `%${q.texto}%`));
@@ -42,6 +46,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { userId, error: authError } = await requireUser();
+  if (authError) return authError;
+
   const { data, error } = await readJson(req, createReceitaSchema);
   if (error || !data) return error!;
 
@@ -49,6 +56,7 @@ export async function POST(req: NextRequest) {
     .insert(receita)
     .values({
       ...data,
+      usuarioId: userId,
       valor: Number(data.valor),
       observacoes: data.observacoes ?? null,
     })

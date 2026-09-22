@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/connection";
 import { user } from "@/db/schema/user";
 import { eq } from "drizzle-orm";
-import CryptoJS from "crypto-js";
+import { hashPassword, needsRehash, verifyPassword } from "@/lib/auth/password";
+import { createSession } from "@/lib/auth/session";
 
 export async function POST(request: NextRequest) {
     try {
@@ -12,7 +13,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Email e senha são obrigatórios" }, { status: 400 });
         }
 
-        // Buscar usuário pelo email
         const existingUser = await db.select().from(user).where(eq(user.email, email)).limit(1);
 
         if (existingUser.length === 0) {
@@ -21,15 +21,23 @@ export async function POST(request: NextRequest) {
 
         const userData = existingUser[0];
 
-        // Criptografar a senha fornecida para comparar
-        const senhaCriptografada = CryptoJS.SHA256(senha).toString();
+        const senhaCorreta = await verifyPassword(senha, userData.senha);
 
-        // Verificar se a senha está correta
-        if (userData.senha !== senhaCriptografada) {
+        if (!senhaCorreta) {
             return NextResponse.json({ error: "Email ou senha incorretos" }, { status: 401 });
         }
 
-        // Login bem-sucedido - retornar dados do usuário (sem a senha)
+        // Migração transparente: senha ainda no formato SHA-256 antigo é regravada
+        // com scrypt + salt agora que sabemos que ela confere.
+        if (needsRehash(userData.senha)) {
+            await db
+                .update(user)
+                .set({ senha: await hashPassword(senha) })
+                .where(eq(user.id, userData.id));
+        }
+
+        await createSession(userData.id);
+
         return NextResponse.json(
             {
                 message: "Login realizado com sucesso",

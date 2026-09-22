@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/connection";
 import { user } from "@/db/schema/user";
 import { eq } from "drizzle-orm";
-import CryptoJS from "crypto-js";
+import { requireUser } from "@/lib/auth/guard";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
 export async function PUT(request: NextRequest) {
     try {
-        const { userId, senhaAtual, novaSenha, confirmarSenha } = await request.json();
+        // O usuário alterado é sempre o da sessão; o userId do body é ignorado.
+        const { userId, error: authError } = await requireUser();
+        if (authError) return authError;
 
-        if (!userId || !senhaAtual || !novaSenha || !confirmarSenha) {
+        const { senhaAtual, novaSenha, confirmarSenha } = await request.json();
+
+        if (!senhaAtual || !novaSenha || !confirmarSenha) {
             return NextResponse.json(
                 { error: "Todos os campos são obrigatórios" },
                 { status: 400 }
@@ -37,14 +42,11 @@ export async function PUT(request: NextRequest) {
 
         const userData = existingUser[0];
 
-        const senhaAtualCriptografada = CryptoJS.SHA256(senhaAtual).toString();
-
-        if (userData.senha !== senhaAtualCriptografada) {
+        if (!(await verifyPassword(senhaAtual, userData.senha))) {
             return NextResponse.json({ error: "Senha atual incorreta" }, { status: 401 });
         }
 
-        const novaSenhaCriptografada = CryptoJS.SHA256(novaSenha).toString();
-        if (userData.senha === novaSenhaCriptografada) {
+        if (await verifyPassword(novaSenha, userData.senha)) {
             return NextResponse.json(
                 { error: "A nova senha deve ser diferente da senha atual" },
                 { status: 400 }
@@ -53,9 +55,7 @@ export async function PUT(request: NextRequest) {
 
         await db
             .update(user)
-            .set({
-                senha: novaSenhaCriptografada,
-            })
+            .set({ senha: await hashPassword(novaSenha) })
             .where(eq(user.id, userId));
 
         return NextResponse.json({ message: "Senha alterada com sucesso" }, { status: 200 });

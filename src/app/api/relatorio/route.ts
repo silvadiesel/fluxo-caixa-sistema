@@ -3,16 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/connection";
 import { user } from "@/db/schema/user";
 import { eq } from "drizzle-orm";
+import { requireUser } from "@/lib/auth/guard";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 
 export async function GET(req: NextRequest) {
+  // O usuarioId vem sempre da sessão; o que o cliente enviar é ignorado.
+  const { userId: usuarioId, error: authError } = await requireUser();
+  if (authError) return authError;
+
   const url = new URL(req.url);
-  const usuarioId = Number(url.searchParams.get("usuarioId"));
   const dataInicial = url.searchParams.get("dataInicial");
   const dataFinal = url.searchParams.get("dataFinal");
 
-  if (!usuarioId || !dataInicial || !dataFinal) {
+  if (!dataInicial || !dataFinal) {
     return NextResponse.json(
       { error: "Parâmetros inválidos" },
       { status: 400 }

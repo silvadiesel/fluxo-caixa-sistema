@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { despesa } from "@/db/schema/despesa";
 import { receita } from "@/db/schema/receita";
 import { badRequest, notFound, ok, parseId, readJson } from "@/lib/https";
+import { requireUser } from "@/lib/auth/guard";
 import { updateCategoriaSchema } from "@/lib/validator/categoriaValidator";
 import { normalizeCategoriaNome } from "@/lib/utils/normalizeCategoria";
 
@@ -13,6 +14,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { userId, error: authError } = await requireUser();
+    if (authError) return authError;
+
     const { id: idParam } = await params;
     const id = parseId(idParam);
     if (!id) return badRequest("ID inválido");
@@ -24,7 +28,7 @@ export async function PATCH(
     const [existing] = await db
       .select()
       .from(categorias)
-      .where(eq(categorias.id, id))
+      .where(and(eq(categorias.id, id), eq(categorias.usuarioId, userId)))
       .limit(1);
 
     if (!existing) {
@@ -71,7 +75,7 @@ export async function PATCH(
     const [updated] = await db
       .update(categorias)
       .set(updateData)
-      .where(eq(categorias.id, id))
+      .where(and(eq(categorias.id, id), eq(categorias.usuarioId, userId)))
       .returning();
 
     if (!updated) {
@@ -120,6 +124,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { userId, error: authError } = await requireUser();
+    if (authError) return authError;
+
     const { id: idParam } = await params;
     const id = parseId(idParam);
     if (!id) return badRequest("ID inválido");
@@ -127,7 +134,7 @@ export async function DELETE(
     const [existing] = await db
       .select()
       .from(categorias)
-      .where(eq(categorias.id, id))
+      .where(and(eq(categorias.id, id), eq(categorias.usuarioId, userId)))
       .limit(1);
 
     if (!existing) {
@@ -167,7 +174,7 @@ export async function DELETE(
     // Deletar permanentemente
     const [deleted] = await db
       .delete(categorias)
-      .where(eq(categorias.id, id))
+      .where(and(eq(categorias.id, id), eq(categorias.usuarioId, userId)))
       .returning();
 
     if (!deleted) {

@@ -42,3 +42,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# arquivos de regras para agentes, gerados automaticamente pelo build do Next 16
+AGENTS.md
+CLAUDE.md

@@ -1,21 +1,30 @@
 import { NextRequest } from "next/server";
 import { db } from "@/db/connection";
 import { despesa } from "@/db/schema/despesa";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { badRequest, notFound, ok, parseId, readJson } from "@/lib/https";
+import { requireUser } from "@/lib/auth/guard";
 import { updateDespesaSchema } from "@/lib/validator/despesaValidator";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { userId, error: authError } = await requireUser();
+    if (authError) return authError;
+
     const { id: idParam } = await params;
     const id = parseId(idParam);
     if (!id) return badRequest("Invalid id");
 
-    const [row] = await db.select().from(despesa).where(eq(despesa.id, id)).limit(1);
+    const [row] = await db.select().from(despesa)
+        .where(and(eq(despesa.id, id), eq(despesa.usuarioId, userId)))
+        .limit(1);
     if (!row) return notFound();
     return ok(row);
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { userId, error: authError } = await requireUser();
+    if (authError) return authError;
+
     const { id: idParam } = await params;
     const id = parseId(idParam);
     if (!id) return badRequest("Invalid id");
@@ -29,8 +38,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             ...data,
             valor: data.valor ? Number(data.valor) : undefined,
             observacoes: data.observacoes ?? null,
+            usuarioId: userId,
         })
-        .where(eq(despesa.id, id))
+        .where(and(eq(despesa.id, id), eq(despesa.usuarioId, userId)))
         .returning();
 
     if (!row) return notFound();
@@ -38,11 +48,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { userId, error: authError } = await requireUser();
+    if (authError) return authError;
+
     const { id: idParam } = await params;
     const id = parseId(idParam);
     if (!id) return badRequest("Invalid id");
 
-    const [row] = await db.delete(despesa).where(eq(despesa.id, id)).returning();
+    const [row] = await db.delete(despesa)
+        .where(and(eq(despesa.id, id), eq(despesa.usuarioId, userId)))
+        .returning();
     if (!row) return notFound();
     return ok(row);
 }
