@@ -9,6 +9,7 @@ import {
 import { readJson, readQuery, ok } from "@/lib/https";
 import { requireUser } from "@/lib/auth/guard";
 import { renderReceitas } from "@/lib/adapters/receita.adapter";
+import { filtroTexto } from "@/lib/utils/busca";
 export async function GET(req: NextRequest) {
   const { userId, error: authError } = await requireUser();
   if (authError) return authError;
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
   const where: SQL[] = [eq(receita.usuarioId, userId)];
   if (q.categoria) where.push(like(receita.categoria, `%${q.categoria}%`));
   if (q.status) where.push(eq(receita.status, q.status));
-  if (q.texto) where.push(like(receita.descricao, `%${q.texto}%`));
+  if (q.texto) where.push(filtroTexto(q.texto, receita.descricao, receita.observacoes));
   if (q.dataInicial) where.push(gte(receita.data, q.dataInicial));
   if (q.dataFinal) where.push(lte(receita.data, q.dataFinal));
 
