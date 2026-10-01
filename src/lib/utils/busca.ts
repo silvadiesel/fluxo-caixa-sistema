@@ -1,7 +1,7 @@
 import { Column, SQL, sql } from "drizzle-orm";
 
-export function normalizarBusca(texto: string): string {
-  return texto.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+function normalizarBusca(texto: string): string {
+  return texto.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 }
 
 const VARIANTES: Record<string, string> = {

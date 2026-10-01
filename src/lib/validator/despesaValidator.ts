@@ -22,7 +22,7 @@ export const listDespesasQuerySchema = z
     dataInicial: dateYMD.optional(),
     dataFinal: dateYMD.optional(),
     categoria: z.string().optional(),
-    texto: z.string().optional(),
+    texto: z.string().max(200).optional(),
     status: statusEnum.optional(),
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
