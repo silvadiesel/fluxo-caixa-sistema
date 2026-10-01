@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/connection";
 import { despesa } from "@/db/schema/despesa";
-import { and, count, desc, eq, gte, like, lte, SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, lte, SQL } from "drizzle-orm";
 import { ok, readJson, readQuery } from "@/lib/https";
 import { requireUser } from "@/lib/auth/guard";
+import { filtroTexto } from "@/lib/utils/busca";
 import {
   createDespesaSchema,
   DespesaSelect,
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
   const where: SQL[] = [eq(despesa.usuarioId, userId)];
   if (q.categoria) where.push(eq(despesa.categoria, q.categoria));
   if (q.status) where.push(eq(despesa.status, q.status));
-  if (q.texto) where.push(like(despesa.descricao, `%${q.texto}%`));
+  if (q.texto) where.push(filtroTexto(q.texto, despesa.descricao, despesa.observacoes));
   if (q.dataInicial) where.push(gte(despesa.data, q.dataInicial));
   if (q.dataFinal) where.push(lte(despesa.data, q.dataFinal));
 
